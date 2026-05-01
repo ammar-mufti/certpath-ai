@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { fromDomainSlug, DOMAIN_TOPICS, toTopicSlug } from '../../utils/domainUtils'
+import { fromDomainSlug, toTopicSlug } from '../../utils/domainUtils'
 import { useStageContent } from '../../hooks/useStageContent'
 import { useLearnStore } from '../../store/learnStore'
-import { DOMAIN_COLORS } from '../../store/examStore'
 import { contentCache } from '../../services/contentCache'
+import { getCert } from '../../data/certifications'
 import type { Stage1Summary, Stage2Topic, Stage4Question } from '../../types/content'
 import Stage1SummaryComponent from './Stage1Summary'
 import Stage2Concepts from './Stage2Concepts'
@@ -31,9 +31,9 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
   const isRateLimit = message.includes('rate') || message.includes('429')
   const isAuthError = message.includes('key') || message.includes('403') || message.includes('401')
   const hint = isRateLimit
-    ? 'Groq API is rate limited — wait a few seconds then retry. This can happen when multiple topics load at once.'
+    ? 'Groq API is rate limited — wait a few seconds then retry.'
     : isAuthError
-    ? 'API key issue — try refreshing the page. If it persists, contact support.'
+    ? 'API key issue — try refreshing the page.'
     : null
 
   return (
@@ -49,8 +49,8 @@ function ErrorRetry({ message, onRetry }: { message: string; onRetry: () => void
   )
 }
 
-function RegeneratePanel({ domain, onCancel }: { domain: string; onCancel: () => void }) {
-  const generatedDate = contentCache.getGeneratedDate(domain)
+function RegeneratePanel({ certId, domain, onCancel }: { certId: string; domain: string; onCancel: () => void }) {
+  const generatedDate = contentCache.getGeneratedDate(certId, domain)
   return (
     <div className="bg-ink border border-warn/30 rounded-xl p-4 space-y-3">
       <p className="text-cream text-sm">
@@ -62,7 +62,7 @@ function RegeneratePanel({ domain, onCancel }: { domain: string; onCancel: () =>
           Cancel
         </button>
         <button
-          onClick={() => { contentCache.clearDomain(domain); window.location.reload() }}
+          onClick={() => { contentCache.clearDomain(certId, domain); window.location.reload() }}
           className="px-4 py-1.5 rounded-lg bg-warn text-navy font-bold text-sm hover:bg-amber-500 transition-colors"
         >
           Yes, Regenerate
@@ -72,60 +72,74 @@ function RegeneratePanel({ domain, onCancel }: { domain: string; onCancel: () =>
   )
 }
 
-export default function DomainPage() {
+interface Props {
+  certId: string
+}
+
+export default function DomainPage({ certId }: Props) {
   const { domainSlug } = useParams<{ domainSlug: string }>()
   const domain = fromDomainSlug(domainSlug ?? '')
   const navigate = useNavigate()
   const topicRefs = useRef<Record<string, HTMLDivElement | null>>({})
   useLearnStore()
 
+  const cert = getCert(certId)
+  const certDomain = cert?.domains.find(d => d.name === domain)
 
   const [autoExpandTopic, setAutoExpandTopic] = useState<string | null>(null)
   const [jumpedBannerTopic, setJumpedBannerTopic] = useState<string | null>(null)
   const [showRegenPanel, setShowRegenPanel] = useState(false)
 
-  // Scroll center panel to top on mount (component remounts per domain via key prop)
   useEffect(() => {
     document.getElementById('main-scroll')?.scrollTo({ top: 0 })
   }, [])
 
-  // Read navigation target from sessionStorage on mount
   useEffect(() => {
-    const sidebarNav = sessionStorage.getItem('ccxp_sidebar_expand_topic')
+    const sidebarNav = sessionStorage.getItem('certpath_sidebar_expand_topic')
     if (sidebarNav) {
       try {
         const { topic } = JSON.parse(sidebarNav) as { topic: string }
-        sessionStorage.removeItem('ccxp_sidebar_expand_topic')
+        sessionStorage.removeItem('certpath_sidebar_expand_topic')
         setAutoExpandTopic(topic)
-        console.log('Auto expand target set (sidebar):', topic)
       } catch { /* ignore */ }
     }
 
-    const examNav = sessionStorage.getItem('ccxp_navigate_to_topic')
+    const examNav = sessionStorage.getItem('certpath_navigate_to_topic')
     if (examNav) {
       try {
         const { sourceTopic } = JSON.parse(examNav) as { sourceTopic: string }
+        sessionStorage.removeItem('certpath_navigate_to_topic')
+        setAutoExpandTopic(sourceTopic)
+        setJumpedBannerTopic(sourceTopic)
+      } catch { /* ignore */ }
+    }
+
+    // Legacy key compat
+    const legacyNav = sessionStorage.getItem('ccxp_navigate_to_topic')
+    if (legacyNav) {
+      try {
+        const { sourceTopic } = JSON.parse(legacyNav) as { sourceTopic: string }
         sessionStorage.removeItem('ccxp_navigate_to_topic')
         setAutoExpandTopic(sourceTopic)
         setJumpedBannerTopic(sourceTopic)
-        console.log('Auto expand target set (exam nav):', sourceTopic)
       } catch { /* ignore */ }
     }
   }, [])
 
   useEffect(() => {
-    if (domain && !DOMAIN_TOPICS[domain]) navigate('/learn', { replace: true })
-  }, [domain, navigate])
+    if (domain && !certDomain) navigate(`/${certId}/learn`, { replace: true })
+  }, [domain, certDomain, navigate, certId])
 
-  const color = DOMAIN_COLORS[domain] ?? '#C9A84C'
-  const generatedDate = contentCache.getGeneratedDate(domain)
+  const color = cert?.color ?? '#C9A84C'
+  const generatedDate = contentCache.getGeneratedDate(certId, domain)
+  const topics = certDomain?.topics ?? []
 
-  const s1 = useStageContent<Stage1Summary>(domain, 'stage1-summary')
-  const s2 = useStageContent<Stage2Topic[]>(domain, 'stage2-concepts', { topics: DOMAIN_TOPICS[domain] ?? [] })
-  const s4 = useStageContent<Stage4Question[]>(domain, 'stage4-quiz')
+  const s1 = useStageContent<Stage1Summary>(certId, domain, 'stage1-summary')
+  const s2 = useStageContent<Stage2Topic[]>(certId, domain, 'stage2-concepts', { topics })
+  const s4 = useStageContent<Stage4Question[]>(certId, domain, 'stage4-quiz')
 
   useEffect(() => {
-    if (domain && DOMAIN_TOPICS[domain]) s1.load()
+    if (domain && certDomain) s1.load()
   }, [domain]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -142,35 +156,27 @@ export default function DomainPage() {
       const el = document.getElementById(`topic-${slug}`)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        console.log('Scrolled to topic:', topic)
       } else {
-        console.warn('Topic element not found:', `topic-${slug}`)
         document.getElementById('key-concepts')?.scrollIntoView({ behavior: 'smooth' })
       }
     }, 150)
   }
 
-  // Trigger auto-expand once Stage 2 data is ready
   useEffect(() => {
     if (!autoExpandTopic || !s2.data) return
-    console.log('Stage 2 ready, expanding topic:', autoExpandTopic)
     setTimeout(() => {
       handleTopicExpand(autoExpandTopic)
       setAutoExpandTopic(null)
     }, 300)
   }, [autoExpandTopic, s2.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Listen for same-page expand-topic custom event (sidebar click while already on this domain)
   useEffect(() => {
-    const handler = (e: CustomEvent) => {
-      console.log('expand-topic event received:', e.detail.topic)
-      handleTopicExpand(e.detail.topic)
-    }
+    const handler = (e: CustomEvent) => { handleTopicExpand(e.detail.topic) }
     window.addEventListener('expand-topic', handler as EventListener)
     return () => window.removeEventListener('expand-topic', handler as EventListener)
   }, [s2.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!domain || !DOMAIN_TOPICS[domain]) return null
+  if (!domain || !certDomain) return null
 
   return (
     <LearnLayout showPageNav activeDomain={domain} sections={SECTIONS}>
@@ -179,13 +185,14 @@ export default function DomainPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl mb-1" style={{ color }}>{domain}</h1>
+            <p className="text-mist text-xs">{certDomain.percentage}% of {cert?.name} exam · {certDomain.weight} questions</p>
             {generatedDate && (
-              <p className="text-mist text-xs">Content generated: {generatedDate}</p>
+              <p className="text-mist text-xs mt-0.5">Content generated: {generatedDate}</p>
             )}
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
-              onClick={() => navigate(`/exam?domain=${encodeURIComponent(domain)}`)}
+              onClick={() => navigate(`/${certId}/exam?domain=${encodeURIComponent(domain)}`)}
               className="text-sm px-3 py-1.5 rounded-lg border text-gold border-gold/50 hover:bg-gold/10 transition-colors"
             >
               Domain Drill
@@ -200,7 +207,7 @@ export default function DomainPage() {
         </div>
 
         {showRegenPanel && (
-          <RegeneratePanel domain={domain} onCancel={() => setShowRegenPanel(false)} />
+          <RegeneratePanel certId={certId} domain={domain} onCancel={() => setShowRegenPanel(false)} />
         )}
 
         {jumpedBannerTopic && (
@@ -213,7 +220,7 @@ export default function DomainPage() {
           </div>
         )}
 
-        {/* ── STAGE 1: Domain Snapshot ── */}
+        {/* Stage 1 */}
         <section id="snapshot">
           <h2 className="text-cream font-semibold text-lg mb-3">Domain Snapshot</h2>
           {s1.loading && <Skeleton lines={5} />}
@@ -221,7 +228,7 @@ export default function DomainPage() {
           {s1.data && <Stage1SummaryComponent data={s1.data} />}
         </section>
 
-        {/* ── STAGE 2: Key Concepts ── */}
+        {/* Stage 2 */}
         {(s1.data || s1.loading) && (
           <section id="key-concepts">
             <h2 className="text-cream font-semibold text-lg mb-3">Key Concepts</h2>
@@ -244,7 +251,7 @@ export default function DomainPage() {
           </section>
         )}
 
-        {/* ── STAGE 4: Quiz ── */}
+        {/* Stage 4 */}
         {s2.data && (
           <section id="quiz">
             <h2 className="text-cream font-semibold text-lg mb-3">Quick Quiz</h2>

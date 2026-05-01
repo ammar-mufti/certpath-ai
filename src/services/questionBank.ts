@@ -10,14 +10,30 @@ export interface SavedQuestionSet {
   totalCount: number
   timesUsed: number
   lastUsed: string | null
+  certId: string
+  certName: string
 }
 
-const STORAGE_KEY = 'ccxp_question_bank'
+const STORAGE_KEY = 'certpath_question_bank'
 const MAX_SETS = 10
 
 function loadSets(): SavedQuestionSet[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    // Try new key first, fall back to legacy
+    const newData = localStorage.getItem(STORAGE_KEY)
+    if (newData) return JSON.parse(newData)
+    const legacy = localStorage.getItem('ccxp_question_bank')
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as Omit<SavedQuestionSet, 'certId' | 'certName'>[]
+      const migrated: SavedQuestionSet[] = parsed.map(s => ({
+        ...s,
+        certId: 'ccxp',
+        certName: 'CCXP',
+      }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      return migrated
+    }
+    return []
   } catch {
     return []
   }
@@ -28,7 +44,7 @@ function saveSets(sets: SavedQuestionSet[]) {
 }
 
 export const questionBank = {
-  save(questions: Question[], mode: string, domains: string[]): SavedQuestionSet {
+  save(questions: Question[], mode: string, domains: string[], certId = 'ccxp', certName = 'CCXP'): SavedQuestionSet {
     const sets = loadSets()
     const now = new Date()
     const modeLabel = mode === 'full' ? 'Full Exam' : mode === 'mini' ? 'Mini Drill' : 'Domain Drill'
@@ -37,20 +53,24 @@ export const questionBank = {
       id: crypto.randomUUID(),
       createdAt: now.toISOString(),
       mode: mode as SavedQuestionSet['mode'],
-      label: `${modeLabel} — ${dateLabel}`,
+      label: `${certName} ${modeLabel} — ${dateLabel}`,
       domains,
       questions,
       totalCount: questions.length,
       timesUsed: 0,
       lastUsed: null,
+      certId,
+      certName,
     }
     const updated = [newSet, ...sets].slice(0, MAX_SETS)
     saveSets(updated)
     return newSet
   },
 
-  getAll(): SavedQuestionSet[] {
-    return loadSets()
+  getAll(certId?: string): SavedQuestionSet[] {
+    const sets = loadSets()
+    if (certId) return sets.filter(s => s.certId === certId)
+    return sets
   },
 
   get(id: string): SavedQuestionSet | null {
@@ -68,13 +88,12 @@ export const questionBank = {
     saveSets(loadSets().filter(s => s.id !== id))
   },
 
-  hasAny(): boolean {
-    return loadSets().length > 0
+  hasAny(certId?: string): boolean {
+    return loadSets().filter(s => !certId || s.certId === certId).length > 0
   },
 
-  getLatest(mode?: string): SavedQuestionSet | null {
-    const sets = loadSets()
-    if (mode) return sets.find(s => s.mode === mode) ?? null
+  getLatest(mode?: string, certId?: string): SavedQuestionSet | null {
+    const sets = loadSets().filter(s => (!certId || s.certId === certId) && (!mode || s.mode === mode))
     return sets[0] ?? null
   },
 }

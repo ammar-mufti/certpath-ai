@@ -3,11 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
+import LandingPage from './pages/LandingPage'
+import Dashboard from './pages/Dashboard'
 import LearnPage from './pages/LearnPage'
 import ExamPage from './pages/ExamPage'
 import ResultsPage from './pages/ResultsPage'
 import HistoryPage from './pages/HistoryPage'
+import ComingSoonPage from './pages/ComingSoonPage'
 import TutorChat from './components/AI/TutorChat'
+import { getCert } from './data/certifications'
 
 function OfflineBanner() {
   const [offline, setOffline] = useState(!navigator.onLine)
@@ -32,6 +36,29 @@ function TutorChatWrapper() {
   return <TutorChat />
 }
 
+function CertLearnPage() {
+  const certId = window.location.pathname.split('/')[1]
+  const cert = getCert(certId)
+  if (!cert) return <Navigate to="/dashboard" replace />
+  if (!cert.isAvailable) return <ComingSoonPage />
+  return <LearnPage certId={certId} />
+}
+
+function CertExamPage() {
+  const certId = window.location.pathname.split('/')[1]
+  const cert = getCert(certId)
+  if (!cert) return <Navigate to="/dashboard" replace />
+  if (!cert.isAvailable) return <ComingSoonPage />
+  return <ExamPage certId={certId} />
+}
+
+function CertHistoryPage() {
+  const certId = window.location.pathname.split('/')[1]
+  const cert = getCert(certId)
+  if (!cert) return <Navigate to="/dashboard" replace />
+  return <HistoryPage certId={certId} />
+}
+
 export default function App() {
   const init = useAuthStore(s => s.init)
   useEffect(() => { init() }, [init])
@@ -50,18 +77,32 @@ export default function App() {
   }, [])
 
   return (
-    <BrowserRouter basename="/ccxp-simulator">
+    <BrowserRouter basename="/certpath-ai">
       <OfflineBanner />
       <Routes>
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/learn" element={<ProtectedRoute><LearnPage /></ProtectedRoute>} />
-        <Route path="/learn/:domainSlug" element={<ProtectedRoute><LearnPage /></ProtectedRoute>} />
-        <Route path="/exam/*" element={<ProtectedRoute><ExamPage /></ProtectedRoute>} />
-        <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/learn" replace />} />
+
+        {/* Dashboard */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+        {/* Cert-scoped routes */}
+        <Route path="/:certId/learn" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
+        <Route path="/:certId/learn/:domainSlug" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
+        <Route path="/:certId/exam/*" element={<ProtectedRoute><CertExamPage /></ProtectedRoute>} />
+        <Route path="/:certId/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+        <Route path="/:certId/history" element={<ProtectedRoute><CertHistoryPage /></ProtectedRoute>} />
+
+        {/* Legacy redirects */}
+        <Route path="/learn" element={<Navigate to="/ccxp/learn" replace />} />
+        <Route path="/learn/:domainSlug" element={<Navigate to="/ccxp/learn" replace />} />
+        <Route path="/exam/*" element={<Navigate to="/ccxp/exam" replace />} />
+        <Route path="/results" element={<Navigate to="/ccxp/results" replace />} />
+        <Route path="/history" element={<Navigate to="/ccxp/history" replace />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {/* AI Tutor — shown when logged in */}
       <TutorChatWrapper />
     </BrowserRouter>
   )

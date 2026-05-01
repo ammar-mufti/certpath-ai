@@ -30,29 +30,51 @@ interface DomainProgress {
   quizScore: number | null
 }
 
+// Progress keyed by `${certId}::${domain}`
 interface LearnState {
   activeDomain: string | null
   activeTab: Record<string, number>
   progress: Record<string, DomainProgress>
   setActiveDomain: (domain: string) => void
   setActiveTab: (domain: string, tab: number) => void
-  markTopicRead: (domain: string, topic: string) => void
+  markTopicRead: (certId: string, domain: string, topic: string) => void
+  getReadTopics: (certId: string, domain: string) => string[]
   markFlashcardKnown: (domain: string, index: number) => void
   setQuizScore: (domain: string, score: number) => void
-  getDomainProgress: (domain: string) => number
+  getDomainProgress: (certId: string, domain: string) => number
   resetProgress: () => void
 }
 
+const STORAGE_KEY = 'certpath_learn_progress'
+
 function loadProgress(): Record<string, DomainProgress> {
   try {
-    return JSON.parse(localStorage.getItem('ccxp_learn_progress') ?? '{}')
+    // Try new key first, fall back to legacy
+    const newData = localStorage.getItem(STORAGE_KEY)
+    if (newData) return JSON.parse(newData)
+    const legacy = localStorage.getItem('ccxp_learn_progress')
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as Record<string, DomainProgress>
+      // Migrate: prefix all keys with ccxp::
+      const migrated: Record<string, DomainProgress> = {}
+      for (const [k, v] of Object.entries(parsed)) {
+        migrated[`ccxp::${k}`] = v
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      return migrated
+    }
+    return {}
   } catch {
     return {}
   }
 }
 
 function saveProgress(p: Record<string, DomainProgress>) {
-  localStorage.setItem('ccxp_learn_progress', JSON.stringify(p))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+}
+
+function progressKey(certId: string, domain: string) {
+  return `${certId}::${domain}`
 }
 
 export const useLearnStore = create<LearnState>((set, get) => ({
@@ -68,12 +90,18 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     set(state => ({ activeTab: { ...state.activeTab, [domain]: tab } }))
   },
 
-  markTopicRead(domain, topic) {
+  getReadTopics(certId, domain) {
+    const key = progressKey(certId, domain)
+    return get().progress[key]?.topicsRead ?? []
+  },
+
+  markTopicRead(certId, domain, topic) {
+    const key = progressKey(certId, domain)
     set(state => {
       const p = { ...state.progress }
-      if (!p[domain]) p[domain] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
-      if (!p[domain].topicsRead.includes(topic)) {
-        p[domain] = { ...p[domain], topicsRead: [...p[domain].topicsRead, topic] }
+      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
+      if (!p[key].topicsRead.includes(topic)) {
+        p[key] = { ...p[key], topicsRead: [...p[key].topicsRead, topic] }
       }
       saveProgress(p)
       return { progress: p }
@@ -104,12 +132,13 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   },
 
   resetProgress() {
-    localStorage.removeItem('ccxp_learn_progress')
+    localStorage.removeItem(STORAGE_KEY)
     set({ progress: {}, activeTab: {} })
   },
 
-  getDomainProgress(domain) {
-    const p = get().progress[domain]
+  getDomainProgress(certId, domain) {
+    const key = progressKey(certId, domain)
+    const p = get().progress[key]
     if (!p) return 0
     const topicCount = DOMAIN_TOPICS[domain]?.length ?? 5
     const topicsScore = Math.min((p.topicsRead.length / topicCount) * 60, 60)

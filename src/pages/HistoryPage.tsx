@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import TopNav from '../components/Nav/TopNav'
 import { useHistoryStore } from '../store/historyStore'
 import { questionBank } from '../services/questionBank'
+import { getCert } from '../data/certifications'
 import type { SavedQuestionSet } from '../services/questionBank'
 import type { ExamAttempt } from '../types/history'
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+interface Props {
+  certId: string
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -24,10 +27,8 @@ function modeLabel(mode: string) {
   return 'Domain Drill'
 }
 
-// ── Attempt Card ─────────────────────────────────────────────────────────────
-
-function AttemptCard({ attempt }: { attempt: ExamAttempt }) {
-  const passed = attempt.pct >= 70
+function AttemptCard({ attempt, passingScore }: { attempt: ExamAttempt; passingScore: number }) {
+  const passed = attempt.pct >= passingScore
   return (
     <div className="bg-ink border border-white/10 rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -63,7 +64,7 @@ function AttemptCard({ attempt }: { attempt: ExamAttempt }) {
           {attempt.domainScores.map(ds => (
             <span
               key={ds.domain}
-              className={`text-[10px] px-2 py-0.5 rounded-full ${ds.pct >= 70 ? 'bg-pass/20 text-pass' : 'bg-fail/20 text-fail'}`}
+              className={`text-[10px] px-2 py-0.5 rounded-full ${ds.pct >= passingScore ? 'bg-pass/20 text-pass' : 'bg-fail/20 text-fail'}`}
             >
               {ds.domain.split(' ')[0]} {ds.pct}%
             </span>
@@ -74,20 +75,19 @@ function AttemptCard({ attempt }: { attempt: ExamAttempt }) {
   )
 }
 
-// ── Stats Banner ─────────────────────────────────────────────────────────────
-
-function StatsBanner() {
+function StatsBanner({ certId, passingScore }: { certId: string; passingScore: number }) {
   const { attempts, getBestScore, getLatestScore, getAverageScore } = useHistoryStore()
-  const best = getBestScore()
-  const latest = getLatestScore()
-  const avg = getAverageScore()
+  const certAttempts = attempts.filter(a => a.certId === certId)
+  const best = getBestScore(certId)
+  const latest = getLatestScore(certId)
+  const avg = getAverageScore(certId)
 
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
       {[
         { label: 'Best Score', value: best != null ? `${best}%` : '—', color: 'text-pass' },
-        { label: 'Latest', value: latest != null ? `${latest}%` : '—', color: latest != null && latest >= 70 ? 'text-pass' : 'text-fail' },
-        { label: `Average (${attempts.length})`, value: avg != null ? `${avg}%` : '—', color: 'text-gold' },
+        { label: 'Latest', value: latest != null ? `${latest}%` : '—', color: latest != null && latest >= passingScore ? 'text-pass' : 'text-fail' },
+        { label: `Average (${certAttempts.length})`, value: avg != null ? `${avg}%` : '—', color: 'text-gold' },
       ].map(s => (
         <div key={s.label} className="bg-ink border border-white/10 rounded-xl p-4 text-center">
           <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -98,23 +98,20 @@ function StatsBanner() {
   )
 }
 
-// ── Question Bank Tab ─────────────────────────────────────────────────────────
-
-function QuestionBankTab() {
+function QuestionBankTab({ certId }: { certId: string }) {
   const navigate = useNavigate()
-  const [sets, setSets] = useState(() => questionBank.getAll())
+  const [sets, setSets] = useState(() => questionBank.getAll(certId))
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   function handleRetake(set: SavedQuestionSet) {
-    // Store the set ID in sessionStorage — ConfigScreen picks it up
-    sessionStorage.setItem('ccxp_retake_set_id', set.id)
-    navigate('/exam')
+    sessionStorage.setItem('certpath_retake_set_id', set.id)
+    navigate(`/${certId}/exam`)
   }
 
   function handleDelete(id: string) {
     if (deletingId === id) {
       questionBank.delete(id)
-      setSets(questionBank.getAll())
+      setSets(questionBank.getAll(certId))
       setDeletingId(null)
     } else {
       setDeletingId(id)
@@ -128,7 +125,7 @@ function QuestionBankTab() {
         <h2 className="text-cream font-serif text-xl mb-2">No saved question sets</h2>
         <p className="text-mist text-sm">Complete your first exam to save questions automatically.</p>
         <button
-          onClick={() => navigate('/exam')}
+          onClick={() => navigate(`/${certId}/exam`)}
           className="mt-4 px-6 py-2 bg-gold text-navy font-bold rounded-lg hover:bg-amber-400 transition-colors text-sm"
         >
           Start an Exam →
@@ -147,9 +144,7 @@ function QuestionBankTab() {
         for (const q of set.questions) {
           domainCounts[q.domain] = (domainCounts[q.domain] ?? 0) + 1
         }
-        const lastUsedLabel = set.lastUsed
-          ? formatDate(set.lastUsed)
-          : 'Never used'
+        const lastUsedLabel = set.lastUsed ? formatDate(set.lastUsed) : 'Never used'
 
         return (
           <div key={set.id} className="bg-ink border border-white/10 rounded-xl p-5 space-y-3">
@@ -206,23 +201,24 @@ function QuestionBankTab() {
   )
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
-
 type Tab = 'records' | 'bank'
 
-export default function HistoryPage() {
+export default function HistoryPage({ certId }: Props) {
   const [tab, setTab] = useState<Tab>('records')
   const { attempts } = useHistoryStore()
-
-  console.log('[HistoryPage] attempts:', attempts.length)
+  const cert = getCert(certId)
+  const certAttempts = attempts.filter(a => a.certId === certId)
+  const passingScore = cert?.passingScore ?? 70
 
   return (
     <div className="min-h-screen bg-navy">
       <TopNav />
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-cream font-serif text-2xl mb-6">History</h1>
+        <div className="flex items-center gap-3 mb-6">
+          {cert && <span className="text-2xl">{cert.icon}</span>}
+          <h1 className="text-cream font-serif text-2xl">{cert?.name ?? certId} History</h1>
+        </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-ink rounded-xl p-1 border border-white/10">
           <button
             onClick={() => setTab('records')}
@@ -230,7 +226,7 @@ export default function HistoryPage() {
               tab === 'records' ? 'bg-gold text-navy' : 'text-mist hover:text-cream'
             }`}
           >
-            📊 Exam Records {attempts.length > 0 && `(${attempts.length})`}
+            📊 Exam Records {certAttempts.length > 0 && `(${certAttempts.length})`}
           </button>
           <button
             onClick={() => setTab('bank')}
@@ -238,30 +234,30 @@ export default function HistoryPage() {
               tab === 'bank' ? 'bg-gold text-navy' : 'text-mist hover:text-cream'
             }`}
           >
-            📝 Question Bank {questionBank.hasAny() && `(${questionBank.getAll().length})`}
+            📝 Question Bank {questionBank.hasAny(certId) && `(${questionBank.getAll(certId).length})`}
           </button>
         </div>
 
         {tab === 'records' && (
           <>
-            {attempts.length === 0 ? (
+            {certAttempts.length === 0 ? (
               <div className="bg-ink rounded-2xl p-12 border border-white/10 text-center">
                 <div className="text-5xl mb-4">📊</div>
-                <h2 className="text-cream font-serif text-xl mb-2">No exam history yet</h2>
+                <h2 className="text-cream font-serif text-xl mb-2">No {cert?.name ?? certId} exam history yet</h2>
                 <p className="text-mist text-sm">Complete a practice exam to start tracking your progress</p>
               </div>
             ) : (
               <>
-                <StatsBanner />
+                <StatsBanner certId={certId} passingScore={passingScore} />
                 <div className="space-y-3">
-                  {attempts.map(a => <AttemptCard key={a.id} attempt={a} />)}
+                  {certAttempts.map(a => <AttemptCard key={a.id} attempt={a} passingScore={passingScore} />)}
                 </div>
               </>
             )}
           </>
         )}
 
-        {tab === 'bank' && <QuestionBankTab />}
+        {tab === 'bank' && <QuestionBankTab certId={certId} />}
       </div>
     </div>
   )

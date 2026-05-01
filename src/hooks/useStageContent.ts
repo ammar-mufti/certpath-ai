@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react'
 import { contentCache } from '../services/contentCache'
 import { requestQueue } from '../services/requestQueue'
 import { useAuthStore } from '../store/authStore'
-import { DOMAIN_TOPICS, toTopicSlug } from '../utils/domainUtils'
+import { toTopicSlug } from '../utils/domainUtils'
+import { getCert } from '../data/certifications'
 
 type Stage = 'stage1-summary' | 'stage2-concepts' | 'stage3-deepdive' | 'stage4-quiz'
 
@@ -11,21 +12,17 @@ interface Options {
   topics?: string[]
 }
 
-// Returns { data, loading, error, load } — caller controls WHEN to call load()
-// This avoids the enabled-flag re-trigger bug where changing enabled doesn't
-// re-run the effect because load() reference doesn't change.
-export function useStageContent<T>(domain: string, stage: Stage, options?: Options) {
+export function useStageContent<T>(certId: string, domain: string, stage: Stage, options?: Options) {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const token = useAuthStore(s => s.token)
 
   const cacheKey = stage === 'stage3-deepdive' && options?.topic
-    ? `ccxp_${domain}_stage3_${toTopicSlug(options.topic)}`
-    : `ccxp_${domain}_${stage}`
+    ? `${certId}_${domain}_stage3_${toTopicSlug(options.topic)}`
+    : `${certId}_${domain}_${stage}`
 
   const load = useCallback(async () => {
-    // Return immediately if already loading or already have data
     if (loading) return
 
     const cached = contentCache.get<T>(cacheKey)
@@ -40,10 +37,23 @@ export function useStageContent<T>(domain: string, stage: Stage, options?: Optio
     try {
       if (!token) throw new Error('Not authenticated')
       const workerUrl = import.meta.env.VITE_WORKER_URL as string
+      const cert = getCert(certId)
 
-      const requestBody: Record<string, unknown> = { type: stage, domain }
+      const requestBody: Record<string, unknown> = {
+        type: stage,
+        domain,
+        certId,
+        certName: cert?.name ?? certId,
+        certFullName: cert?.fullName ?? certId,
+        certIssuer: cert?.issuer ?? '',
+        passingScore: cert?.passingScore ?? 70,
+        difficulty: cert?.difficulty ?? 'Advanced',
+        examQuestions: cert?.examQuestions ?? 100,
+      }
+
       if (stage === 'stage2-concepts') {
-        requestBody.topics = options?.topics ?? DOMAIN_TOPICS[domain] ?? []
+        const certDomain = cert?.domains.find(d => d.name === domain)
+        requestBody.topics = options?.topics ?? certDomain?.topics ?? []
       }
       if (stage === 'stage3-deepdive') {
         requestBody.topic = options?.topic
@@ -65,17 +75,16 @@ export function useStageContent<T>(domain: string, stage: Stage, options?: Optio
       if (result.error) throw new Error(result.error)
       const content = result.data ?? (result as unknown as T)
 
-      // Only cache on success — errors must never be stored
       contentCache.set(cacheKey, content, domain, stage)
       setData(content)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load'
-      console.error(`[useStageContent] ${domain} ${stage}:`, msg)
+      console.error(`[useStageContent] ${certId} ${domain} ${stage}:`, msg)
       setError(msg)
     } finally {
       setLoading(false)
     }
-  }, [domain, stage, options?.topic, token, cacheKey])
+  }, [certId, domain, stage, options?.topic, token, cacheKey])
 
   return { data, loading, error, load }
 }

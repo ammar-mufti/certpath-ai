@@ -19,6 +19,7 @@ export interface Question {
 export type ExamMode = 'full' | 'mini' | 'domain'
 
 interface ExamState {
+  currentCertId: string | null
   mode: ExamMode | null
   selectedDomain: string | null
   questions: Question[]
@@ -30,6 +31,7 @@ interface ExamState {
   error: string | null
   explanations: Record<string, string>
   currentSetId: string | null
+  setCertId: (id: string) => void
   setMode: (mode: ExamMode, domain?: string) => void
   setQuestions: (questions: Question[]) => void
   setCurrentSetId: (id: string | null) => void
@@ -44,6 +46,7 @@ interface ExamState {
 }
 
 export const useExamStore = create<ExamState>((set, get) => ({
+  currentCertId: null,
   mode: null,
   selectedDomain: null,
   questions: [],
@@ -56,8 +59,12 @@ export const useExamStore = create<ExamState>((set, get) => ({
   explanations: {},
   currentSetId: null,
 
+  setCertId(id) {
+    set({ currentCertId: id })
+  },
+
   setMode(mode, domain) {
-    sessionStorage.removeItem('ccxp_timer_seconds')
+    sessionStorage.removeItem('certpath_timer_seconds')
     set({ mode, selectedDomain: domain ?? null, questions: [], answers: {}, currentIndex: 0, submitted: false, currentSetId: null })
   },
 
@@ -86,12 +93,12 @@ export const useExamStore = create<ExamState>((set, get) => ({
 
   submitExam() {
     set({ submitted: true })
-    sessionStorage.removeItem('ccxp_exam_session')
+    sessionStorage.removeItem('certpath_exam_session')
   },
 
   resetExam() {
     set({ mode: null, selectedDomain: null, questions: [], answers: {}, currentIndex: 0, submitted: false, error: null, explanations: {}, currentSetId: null })
-    sessionStorage.removeItem('ccxp_exam_session')
+    sessionStorage.removeItem('certpath_exam_session')
   },
 
   setExplanation(id, text) {
@@ -128,6 +135,7 @@ export const useExamStore = create<ExamState>((set, get) => ({
   },
 }))
 
+// Legacy CCXP weights — kept for backward compat, new code uses cert registry
 export const DOMAIN_WEIGHTS: Record<ExamMode, Record<string, number>> = {
   full: {
     'CX Strategy': 20,

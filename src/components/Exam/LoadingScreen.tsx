@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useExamStore } from '../../store/examStore'
 import { useQuestionGen, type GenProgress } from '../../hooks/useQuestionGen'
+import { getCert } from '../../data/certifications'
+
+interface Props {
+  certId: string
+}
 
 const STUCK_THRESHOLD_MS = 30_000
 
-export default function LoadingScreen() {
+export default function LoadingScreen({ certId }: Props) {
   const { mode, selectedDomain, setQuestions, setLoading, setError, error } = useExamStore()
-  const { generateForMode } = useQuestionGen()
+  const { generateForMode } = useQuestionGen(certId)
   const navigate = useNavigate()
+  const cert = getCert(certId)
 
   const [progress, setProgress] = useState<GenProgress>({
     percent: 0,
@@ -19,7 +25,6 @@ export default function LoadingScreen() {
   })
   const [stuck, setStuck] = useState(false)
 
-  // Track last progress update time to detect stalls
   const lastUpdateRef = useRef(Date.now())
   const collectedRef = useRef(0)
   const generatedRef = useRef<ReturnType<typeof generateForMode> | null>(null)
@@ -32,7 +37,7 @@ export default function LoadingScreen() {
   }
 
   useEffect(() => {
-    if (!mode) { navigate('/exam'); return }
+    if (!mode) { navigate(`/${certId}/exam`); return }
 
     const promise = generateForMode(mode, selectedDomain, handleProgress)
     generatedRef.current = promise
@@ -41,13 +46,12 @@ export default function LoadingScreen() {
       .then(questions => {
         setQuestions(questions)
         setLoading(false)
-        navigate('/exam/question')
+        navigate(`/${certId}/exam/question`)
       })
       .catch(err => {
         setError(err instanceof Error ? err.message : 'Failed to generate questions')
       })
 
-    // Poll for stuck state every 5s
     const stuckTimer = setInterval(() => {
       if (Date.now() - lastUpdateRef.current > STUCK_THRESHOLD_MS) {
         setStuck(true)
@@ -63,7 +67,7 @@ export default function LoadingScreen() {
         <div className="text-center max-w-sm">
           <div className="text-fail text-lg mb-4">{error}</div>
           <button
-            onClick={() => navigate('/exam')}
+            onClick={() => navigate(`/${certId}/exam`)}
             className="bg-gold text-navy font-bold px-6 py-2 rounded-lg hover:bg-amber-400 transition-colors"
           >
             Try Again
@@ -78,8 +82,9 @@ export default function LoadingScreen() {
   return (
     <div className="min-h-screen bg-navy flex items-center justify-center px-4">
       <div className="text-center max-w-sm w-full">
-        <div className="text-gold text-4xl font-serif mb-6">CCXP</div>
-        <div className="text-cream text-lg mb-2 animate-pulse">{progress.message}</div>
+        <div className="text-gold text-4xl font-serif mb-2">{cert?.icon}</div>
+        <div className="text-cream text-lg font-bold mb-1">{cert?.name ?? certId}</div>
+        <div className="text-cream text-base mb-2 animate-pulse">{progress.message}</div>
         <div className="text-mist text-sm mb-6">
           {progress.collected} / {progress.total} questions ready
         </div>
@@ -99,25 +104,23 @@ export default function LoadingScreen() {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => navigate('/exam')}
+                onClick={() => navigate(`/${certId}/exam`)}
                 className="flex-1 py-2 rounded-lg border border-white/20 text-mist text-xs hover:text-cream transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => {
-                  // Use whatever has been collected so far
                   generatedRef.current?.then(questions => {
                     if (questions.length > 0) {
                       setQuestions(questions)
                       setLoading(false)
-                      navigate('/exam/question')
+                      navigate(`/${certId}/exam/question`)
                     }
                   }).catch(() => {
-                    // If promise already failed, just go back
-                    navigate('/exam')
+                    navigate(`/${certId}/exam`)
                   })
-                  navigate('/exam/question')
+                  navigate(`/${certId}/exam/question`)
                 }}
                 className="flex-1 py-2 rounded-lg bg-gold text-navy text-xs font-bold hover:bg-amber-400 transition-colors"
               >

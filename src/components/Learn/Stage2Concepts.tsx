@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useParams } from 'react-router-dom'
 import type { Stage2Topic } from '../../types/content'
 import { useLearnStore } from '../../store/learnStore'
 import { useStageContent } from '../../hooks/useStageContent'
@@ -14,21 +15,23 @@ interface Props {
 }
 
 interface TopicCardProps {
+  certId: string
   domain: string
   topic: Stage2Topic
   autoExpand: boolean
   onRef: (el: HTMLDivElement | null) => void
 }
 
-function TopicCard({ domain, topic, autoExpand, onRef }: TopicCardProps) {
-  const { progress, markTopicRead } = useLearnStore()
+function TopicCard({ certId, domain, topic, autoExpand, onRef }: TopicCardProps) {
+  const { getReadTopics, markTopicRead } = useLearnStore()
   const [expanded, setExpanded] = useState(autoExpand)
   const [showDeepDive, setShowDeepDive] = useState(false)
   const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isRead = progress[domain]?.topicsRead.includes(topic.topic) ?? false
+  const topicsRead = getReadTopics(certId, domain)
+  const isRead = topicsRead.includes(topic.topic)
 
   const { data: deepDive, loading: deepLoading, error: deepError, load: deepLoad } =
-    useStageContent<Stage3DeepDive>(domain, 'stage3-deepdive', {
+    useStageContent<Stage3DeepDive>(certId, domain, 'stage3-deepdive', {
       topic: topic.topic,
     })
 
@@ -39,17 +42,17 @@ function TopicCard({ domain, topic, autoExpand, onRef }: TopicCardProps) {
   useEffect(() => {
     if (expanded && !isRead) {
       readTimerRef.current = setTimeout(() => {
-        markTopicRead(domain, topic.topic)
+        markTopicRead(certId, domain, topic.topic)
       }, 20000)
     }
     return () => {
       if (readTimerRef.current) clearTimeout(readTimerRef.current)
     }
-  }, [expanded, isRead, domain, topic.topic, markTopicRead])
+  }, [expanded, isRead, certId, domain, topic.topic, markTopicRead])
 
   function handleGoDeeper() {
     setShowDeepDive(true)
-    markTopicRead(domain, topic.topic)
+    markTopicRead(certId, domain, topic.topic)
     if (!deepDive && !deepLoading) deepLoad()
   }
 
@@ -130,7 +133,6 @@ function TopicCard({ domain, topic, autoExpand, onRef }: TopicCardProps) {
                   <div className="space-y-2">
                     <div className="h-2 bg-white/10 rounded w-full" />
                     <div className="h-2 bg-white/10 rounded w-5/6" />
-                    <div className="h-2 bg-white/10 rounded w-4/6" />
                   </div>
                 </div>
               )}
@@ -161,11 +163,15 @@ function TopicCard({ domain, topic, autoExpand, onRef }: TopicCardProps) {
 }
 
 export default function Stage2Concepts({ domain, topics, autoExpandTopic, topicRefs }: Props) {
+  const { certId } = useParams<{ certId?: string }>()
+  const resolvedCertId = certId ?? 'ccxp'
+
   return (
     <div className="space-y-2">
       {topics.map(topic => (
         <TopicCard
           key={topic.topic}
+          certId={resolvedCertId}
           domain={domain}
           topic={topic}
           autoExpand={autoExpandTopic === topic.topic}

@@ -1,12 +1,26 @@
 import { create } from 'zustand'
 import type { ExamAttempt, DomainScore, WrongQuestion } from '../types/history'
 
-const STORAGE_KEY = 'ccxp_exam_history'
+const STORAGE_KEY = 'certpath_exam_history'
 const MAX_ATTEMPTS = 50
 
 function load(): ExamAttempt[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    const newData = localStorage.getItem(STORAGE_KEY)
+    if (newData) return JSON.parse(newData)
+    // Migrate legacy CCXP history
+    const legacy = localStorage.getItem('ccxp_exam_history')
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as Omit<ExamAttempt, 'certId' | 'certName'>[]
+      const migrated: ExamAttempt[] = parsed.map(a => ({
+        ...a,
+        certId: 'ccxp',
+        certName: 'CCXP',
+      }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      return migrated
+    }
+    return []
   } catch {
     return []
   }
@@ -21,11 +35,11 @@ interface HistoryState {
   addAttempt: (attempt: ExamAttempt) => void
   setAiAnalysis: (id: string, analysis: string) => void
   clearHistory: () => void
-  getBestScore: (mode?: string) => number | null
-  getLatestScore: (mode?: string) => number | null
-  getAverageScore: (mode?: string) => number | null
-  getTrend: (mode?: string) => ExamAttempt[]
-  getDomainTrend: (domain: string) => { date: string; pct: number }[]
+  getBestScore: (certId?: string, mode?: string) => number | null
+  getLatestScore: (certId?: string, mode?: string) => number | null
+  getAverageScore: (certId?: string, mode?: string) => number | null
+  getTrend: (certId?: string, mode?: string) => ExamAttempt[]
+  getDomainTrend: (domain: string, certId?: string) => { date: string; pct: number }[]
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
@@ -52,33 +66,42 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     set({ attempts: [] })
   },
 
-  getBestScore(mode) {
-    const attempts = get().attempts.filter(a => !mode || a.mode === mode)
+  getBestScore(certId, mode) {
+    const attempts = get().attempts.filter(a =>
+      (!certId || a.certId === certId) && (!mode || a.mode === mode)
+    )
     if (!attempts.length) return null
     return Math.max(...attempts.map(a => a.pct))
   },
 
-  getLatestScore(mode) {
-    const attempts = get().attempts.filter(a => !mode || a.mode === mode)
+  getLatestScore(certId, mode) {
+    const attempts = get().attempts.filter(a =>
+      (!certId || a.certId === certId) && (!mode || a.mode === mode)
+    )
     return attempts[0]?.pct ?? null
   },
 
-  getAverageScore(mode) {
-    const attempts = get().attempts.filter(a => !mode || a.mode === mode)
+  getAverageScore(certId, mode) {
+    const attempts = get().attempts.filter(a =>
+      (!certId || a.certId === certId) && (!mode || a.mode === mode)
+    )
     if (!attempts.length) return null
     return Math.round(attempts.reduce((s, a) => s + a.pct, 0) / attempts.length)
   },
 
-  getTrend(mode) {
+  getTrend(certId, mode) {
     return get().attempts
-      .filter(a => !mode || a.mode === mode)
+      .filter(a => (!certId || a.certId === certId) && (!mode || a.mode === mode))
       .slice(0, 10)
       .reverse()
   },
 
-  getDomainTrend(domain) {
+  getDomainTrend(domain, certId) {
     return get().attempts
-      .filter(a => a.domainScores.some(d => d.domain === domain))
+      .filter(a =>
+        (!certId || a.certId === certId) &&
+        a.domainScores.some(d => d.domain === domain)
+      )
       .slice(0, 10)
       .reverse()
       .map(a => {

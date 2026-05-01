@@ -30,4 +30,6 @@ export interface ExamAttempt {
   domainScores: DomainScore[]
   wrongQuestions: WrongQuestion[]
   aiAnalysis?: string
+  certId: string
+  certName: string
 }

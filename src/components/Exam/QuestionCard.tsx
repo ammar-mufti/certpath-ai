@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import type { Question } from '../../store/examStore'
 import { useExamStore } from '../../store/examStore'
 import { useAuthStore } from '../../store/authStore'
@@ -25,9 +25,11 @@ function renderMarkdown(text: string) {
 }
 
 export default function QuestionCard({ question, selectedAnswer, onAnswer, questionNumber, totalQuestions }: Props) {
-  const { explanations, setExplanation } = useExamStore()
+  const { explanations, setExplanation, currentCertId } = useExamStore()
   const token = useAuthStore(s => s.token) ?? ''
   const navigate = useNavigate()
+  const { certId: certIdParam } = useParams<{ certId?: string }>()
+  const certId = certIdParam ?? currentCertId ?? 'ccxp'
   const [explaining, setExplaining] = useState(false)
 
   const explanation = explanations[question.id]
@@ -60,20 +62,13 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
   }
 
   function handleStudyTopic() {
-    if (!question.sourceTopic || !question.domain) {
-      console.warn('Question missing sourceTopic or domain:', question)
-      navigate(`/learn/${toDomainSlug(question.domain ?? 'cx-strategy')}`)
-      return
-    }
-
-    console.log('Navigating to study topic:', question.sourceTopic, 'in', question.domain)
-    sessionStorage.setItem('ccxp_navigate_to_topic', JSON.stringify({
+    sessionStorage.setItem('certpath_navigate_to_topic', JSON.stringify({
       sourceTopic: question.sourceTopic,
       sourceTopicSlug: question.sourceTopicSlug ?? '',
       domain: question.domain,
       fromQuestion: question.id,
     }))
-    navigate(`/learn/${toDomainSlug(question.domain)}`)
+    navigate(`/${certId}/learn/${toDomainSlug(question.domain)}`)
   }
 
   return (
@@ -110,7 +105,6 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
 
       {selectedAnswer && (
         <div className="mt-4 space-y-3">
-          {/* Explain button */}
           {!explanation && (
             <button
               onClick={fetchExplanation}
@@ -134,7 +128,6 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
             </div>
           )}
 
-          {/* Study topic button — only shown when wrong */}
           {isWrong && (
             <button
               onClick={handleStudyTopic}

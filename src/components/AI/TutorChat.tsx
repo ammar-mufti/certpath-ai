@@ -8,12 +8,12 @@ import { DOMAIN_COLORS } from '../../store/examStore'
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
 
 const STARTERS = [
-  "What's the difference between CES and NPS?",
-  'Explain the VoC closed loop simply',
-  'Quiz me on CX Maturity Models',
-  'What are the 5 CCXP domains and their weights?',
-  'Give me a mnemonic for Design Thinking stages',
-  "What's the most common exam mistake in Metrics?",
+  'Quiz me on a key concept in this domain',
+  "What's the most common exam mistake here?",
+  'Explain the most important framework I need to know',
+  'Give me a tricky practice question',
+  'How does this domain connect to others?',
+  'What should I focus on for exam day?',
 ]
 
 function renderMarkdown(text: string) {
@@ -30,17 +30,19 @@ function usePageContext() {
   const location = useLocation()
   const { questions, answers, submitted } = useExamStore()
 
-  const domainFromPath = location.pathname.includes('/learn/')
-    ? decodeURIComponent(location.pathname.split('/learn/')[1]?.split('/')[0] ?? '')
-    : ''
+  // Extract certId and domain from path like /:certId/learn/:domainSlug
+  const pathParts = location.pathname.split('/').filter(Boolean)
+  const certId = pathParts[0] ?? ''
+  const section = pathParts[1] ?? ''
+  const domainSlug = pathParts[2] ?? ''
 
-  if (domainFromPath) {
-    return `User is studying the "${domainFromPath}" domain in the Learn module.`
+  if (section === 'learn' && domainSlug) {
+    return `User is studying the "${decodeURIComponent(domainSlug)}" domain for ${certId.toUpperCase()} in the Learn module.`
   }
-  if (location.pathname.includes('/learn')) {
-    return 'User is on the Learn home page, reviewing all 6 CCXP domains.'
+  if (section === 'learn') {
+    return `User is on the ${certId.toUpperCase()} study guide home page.`
   }
-  if (location.pathname.includes('/results') && submitted) {
+  if (section === 'results' && submitted) {
     const correct = questions.filter(q => answers[q.id] === q.correct).length
     const pct = Math.round((correct / questions.length) * 100)
     const domains = [...new Set(questions.map(q => q.domain))]
@@ -53,12 +55,12 @@ function usePageContext() {
       .sort((a, b) => a.pct - b.pct)
       .slice(0, 3)
       .map(x => `${x.d} (${x.pct}%)`)
-    return `User just completed a practice exam. Score: ${correct}/${questions.length} (${pct}%). Weakest domains: ${weak.join(', ')}.`
+    return `User just completed a ${certId.toUpperCase()} practice exam. Score: ${correct}/${questions.length} (${pct}%). Weakest domains: ${weak.join(', ')}.`
   }
-  if (location.pathname.includes('/exam')) {
-    return 'User is currently taking a practice exam.'
+  if (section === 'exam') {
+    return `User is currently taking a ${certId.toUpperCase()} practice exam.`
   }
-  return 'General CCXP study session.'
+  return 'General certification study session.'
 }
 
 function TypingDots() {
@@ -208,7 +210,7 @@ export default function TutorChat() {
             <div className="flex items-center gap-2">
               <span className="text-xl">🎓</span>
               <div>
-                <div className="text-cream font-semibold text-sm">CCXP AI Tutor</div>
+                <div className="text-cream font-semibold text-sm">CertPath AI Tutor</div>
                 <div className="text-mist text-xs truncate max-w-[220px]">{pageContext.split('.')[0]}</div>
               </div>
             </div>
@@ -231,7 +233,7 @@ export default function TutorChat() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && !failedMessage && (
               <div>
-                <p className="text-mist text-sm mb-4 text-center">Ask me anything about the CCXP exam</p>
+                <p className="text-mist text-sm mb-4 text-center">Ask me anything about your certification exam</p>
                 <div className="space-y-2">
                   {STARTERS.map(s => (
                     <button
@@ -323,7 +325,7 @@ export default function TutorChat() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder="Ask about any CCXP topic…"
+                placeholder="Ask about any exam topic…"
                 rows={1}
                 className="flex-1 bg-ink border border-white/20 rounded-xl px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/60 placeholder-mist/50 max-h-24 overflow-y-auto"
                 style={{ minHeight: '40px' }}

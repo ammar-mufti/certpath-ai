@@ -25,7 +25,7 @@ export function useTimer(initialSeconds: number, onExpire: () => void) {
   const start = useCallback(() => {
     // Only restore from sessionStorage if the saved value is close to initialSeconds
     // (i.e. same exam mode) — prevents a previous mini/domain timer bleeding into full exam
-    const saved = sessionStorage.getItem('ccxp_timer_seconds')
+    const saved = sessionStorage.getItem('certpath_timer_seconds')
     const savedVal = saved ? parseInt(saved, 10) : 0
     const withinRange = savedVal > 0 && savedVal <= initialSeconds
     const startVal = withinRange ? savedVal : initialSeconds
@@ -39,7 +39,7 @@ export function useTimer(initialSeconds: number, onExpire: () => void) {
       setSecondsLeft(useTimerStore.getState().secondsLeft - 1)
       const current = useTimerStore.getState().secondsLeft
       // Persist every 10s
-      if (current % 10 === 0) sessionStorage.setItem('ccxp_timer_seconds', String(current))
+      if (current % 10 === 0) sessionStorage.setItem('certpath_timer_seconds', String(current))
       if (current <= 0) {
         clearInterval(intervalRef.current!)
         setRunning(false)
