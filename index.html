@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function() {
+        const p = new URLSearchParams(window.location.search).get('p');
+        if (p) {
+          window.history.replaceState(
+            null, null,
+            '/certpath-ai' + decodeURIComponent(p)
+          );
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/certpath-ai/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CertPath AI — Ace Your Next Certification</title>
+    <meta name="description" content="AI-powered prep for the certifications that advance your career. CCXP, PMP, AWS CCP, PSM I, ITIL 4 and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/certpath-ai/assets/index-BhJ9gogg.js"></script>
+    <link rel="stylesheet" crossorigin href="/certpath-ai/assets/index-CvBt9zpX.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
