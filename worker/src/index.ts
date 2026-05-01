@@ -6,6 +6,20 @@ interface Env {
   JWT_SECRET: string
   GROQ_API_KEY: string
   USER_KV: KVNamespace
+  ADMIN_EMAIL: string
+}
+
+interface StoredUser {
+  name: string
+  email: string
+  passwordHash?: string
+  provider?: string
+  createdAt: string
+  lastActive?: string
+  certsStudied?: string[]
+  examsCompleted?: number
+  lastExamScore?: number | null
+  lastExamCert?: string | null
 }
 
 const ALLOWED_ORIGINS = ['https://ammar-mufti.github.io', 'http://localhost:5173']
@@ -16,9 +30,36 @@ function corsHeaders(origin: string): Record<string, string> {
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
   return {
     'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
+  }
+}
+
+async function requireAdmin(request: Request, env: Env): Promise<Record<string, unknown>> {
+  const auth = request.headers.get('Authorization') ?? ''
+  if (!auth.startsWith('Bearer ')) throw new Error('Unauthorized')
+  const payload = await verifyJwt(auth.replace('Bearer ', ''), env.JWT_SECRET)
+  if (!payload) throw new Error('Unauthorized')
+  if (!payload.isAdmin) throw new Error('Forbidden')
+  return payload
+}
+
+async function upsertUserKv(env: Env, email: string, name: string, provider: string): Promise<void> {
+  const userKey = `user_${email.toLowerCase()}`
+  const existing = await env.USER_KV.get(userKey)
+  const now = new Date().toISOString()
+  if (!existing) {
+    await env.USER_KV.put(userKey, JSON.stringify({
+      name, email: email.toLowerCase(), provider,
+      createdAt: now, lastActive: now,
+      certsStudied: [], examsCompleted: 0, lastExamScore: null, lastExamCert: null,
+    }))
+  } else {
+    const userData = JSON.parse(existing) as StoredUser
+    userData.lastActive = now
+    if (!userData.provider) userData.provider = provider
+    await env.USER_KV.put(userKey, JSON.stringify(userData))
   }
 }
 
@@ -203,13 +244,18 @@ export default {
         email = emails.find(e => e.primary)?.email ?? ''
       }
 
+      const ghEmail = email ?? ''
+      const ghName = ghUser.name ?? ghUser.login
+      await upsertUserKv(env, ghEmail, ghName, 'github')
+
       const jwt = await signJwt({
         id: `github_${ghUser.id}`,
         login: ghUser.login,
-        name: ghUser.name ?? ghUser.login,
-        email: email ?? '',
+        name: ghName,
+        email: ghEmail,
         avatar: ghUser.avatar_url,
         provider: 'github',
+        isAdmin: ghEmail === env.ADMIN_EMAIL,
       }, env.JWT_SECRET)
 
       return Response.redirect(`${FRONTEND_URL}/login?token=${jwt}`, 302)
@@ -254,6 +300,8 @@ export default {
         sub: string; email: string; name: string; picture: string
       }
 
+      await upsertUserKv(env, profile.email, profile.name, 'google')
+
       const jwt = await signJwt({
         id: `google_${profile.sub}`,
         login: profile.email.split('@')[0],
@@ -261,6 +309,7 @@ export default {
         email: profile.email,
         avatar: profile.picture,
         provider: 'google',
+        isAdmin: profile.email === env.ADMIN_EMAIL,
       }, env.JWT_SECRET)
 
       return Response.redirect(`${FRONTEND_URL}/login?token=${jwt}`, 302)
@@ -283,18 +332,24 @@ export default {
       if (existing) return errorRes('Email already registered', 409, origin)
 
       const passwordHash = await hashPassword(password, env.JWT_SECRET)
+      const emailLower = email.toLowerCase()
       await env.USER_KV.put(
-        `user_${email.toLowerCase()}`,
-        JSON.stringify({ name: name.trim(), email: email.toLowerCase(), passwordHash, createdAt: new Date().toISOString() }),
+        `user_${emailLower}`,
+        JSON.stringify({
+          name: name.trim(), email: emailLower, passwordHash, provider: 'email',
+          createdAt: new Date().toISOString(), lastActive: new Date().toISOString(),
+          certsStudied: [], examsCompleted: 0, lastExamScore: null, lastExamCert: null,
+        }),
       )
 
       const user = {
         id: `email_${email.replace(/[@.]/g, '_')}`,
         login: email.split('@')[0],
         name: name.trim(),
-        email: email.toLowerCase(),
+        email: emailLower,
         avatar: null,
         provider: 'email',
+        isAdmin: emailLower === env.ADMIN_EMAIL,
       }
       const token = await signJwt(user, env.JWT_SECRET)
       return jsonRes({ token, user }, 200, origin)
@@ -330,6 +385,12 @@ export default {
       }
 
       await env.USER_KV.delete(attemptKey)
+
+      // Update lastActive on login
+      const updatedData = { ...userData, lastActive: new Date().toISOString() }
+      if (!updatedData.provider) updatedData.provider = 'email'
+      await env.USER_KV.put(`user_${email.toLowerCase()}`, JSON.stringify(updatedData))
+
       const user = {
         id: `email_${email.replace(/[@.]/g, '_')}`,
         login: userData.name.split(' ')[0].toLowerCase(),
@@ -337,6 +398,7 @@ export default {
         email: userData.email,
         avatar: null,
         provider: 'email',
+        isAdmin: userData.email === env.ADMIN_EMAIL,
       }
       const token = await signJwt(user, env.JWT_SECRET)
       return jsonRes({ token, user }, 200, origin)
@@ -347,6 +409,10 @@ export default {
     if (url.pathname === '/api/health' && request.method === 'GET') {
       const keyPrefix = env.GROQ_API_KEY?.substring(0, 8) ?? 'missing'
       const keyLength = env.GROQ_API_KEY?.length ?? 0
+      const [maintenance, banner] = await Promise.all([
+        env.USER_KV.get('settings_maintenance'),
+        env.USER_KV.get('settings_banner'),
+      ])
       try {
         const res = await fetch('https://api.groq.com/openai/v1/models', {
           headers: { Authorization: `Bearer ${env.GROQ_API_KEY}` },
@@ -354,12 +420,164 @@ export default {
         return jsonRes({
           status: res.ok ? 'healthy' : 'unhealthy',
           groq: res.ok ? 'connected' : 'key invalid',
-          keyPrefix,
-          keyLength,
+          keyPrefix, keyLength,
+          maintenance: maintenance === 'true',
+          banner: banner ?? null,
           timestamp: new Date().toISOString(),
         }, 200, origin)
       } catch (err) {
-        return jsonRes({ status: 'error', error: String(err), keyPrefix, keyLength }, 500, origin)
+        return jsonRes({ status: 'error', error: String(err), keyPrefix, keyLength, maintenance: maintenance === 'true', banner: banner ?? null }, 500, origin)
+      }
+    }
+
+    // ── Admin: GET /api/admin/stats ───────────────────────────────────────────
+
+    if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
+      try {
+        await requireAdmin(request, env)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorRes(msg, msg === 'Forbidden' ? 403 : 401, origin)
+      }
+
+      const userList = await env.USER_KV.list({ prefix: 'user_' })
+      const users: Array<{
+        id: string; name: string; email: string; provider: string
+        createdAt: string; lastActive: string | null
+        certsStudied: string[]; examsCompleted: number
+        lastExamScore: number | null; lastExamCert: string | null
+      }> = []
+
+      for (const key of userList.keys) {
+        const data = await env.USER_KV.get(key.name)
+        if (!data) continue
+        const u = JSON.parse(data) as StoredUser
+        if (!u.email) continue
+        users.push({
+          id: key.name,
+          name: u.name ?? '',
+          email: u.email,
+          provider: u.provider ?? 'email',
+          createdAt: u.createdAt ?? new Date().toISOString(),
+          lastActive: u.lastActive ?? null,
+          certsStudied: u.certsStudied ?? [],
+          examsCompleted: u.examsCompleted ?? 0,
+          lastExamScore: u.lastExamScore ?? null,
+          lastExamCert: u.lastExamCert ?? null,
+        })
+      }
+
+      const now = Date.now()
+      const weekAgo = now - 7 * 24 * 60 * 60 * 1000
+      const monthAgo = now - 30 * 24 * 60 * 60 * 1000
+
+      const scoredUsers = users.filter(u => u.lastExamScore !== null)
+      const avgScore = scoredUsers.length
+        ? Math.round(scoredUsers.reduce((s, u) => s + (u.lastExamScore ?? 0), 0) / scoredUsers.length)
+        : 0
+
+      return jsonRes({
+        users: {
+          total: users.length,
+          newThisWeek: users.filter(u => new Date(u.createdAt).getTime() > weekAgo).length,
+          newThisMonth: users.filter(u => new Date(u.createdAt).getTime() > monthAgo).length,
+          byProvider: {
+            google: users.filter(u => u.provider === 'google').length,
+            github: users.filter(u => u.provider === 'github').length,
+            email: users.filter(u => u.provider === 'email').length,
+          },
+        },
+        activity: {
+          totalExams: users.reduce((s, u) => s + u.examsCompleted, 0),
+          avgScore,
+          activeThisWeek: users.filter(u => u.lastActive && new Date(u.lastActive).getTime() > weekAgo).length,
+        },
+        list: users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      }, 200, origin)
+    }
+
+    // ── Admin: POST /api/admin/track ──────────────────────────────────────────
+
+    if (url.pathname === '/api/admin/track' && request.method === 'POST') {
+      const auth = request.headers.get('Authorization') ?? ''
+      const payload = await verifyJwt(auth.replace('Bearer ', ''), env.JWT_SECRET)
+      if (!payload) return errorRes('Unauthorized', 401, origin)
+
+      let body: { event?: string; certId?: string; score?: number; domain?: string }
+      try { body = await request.json() } catch { return errorRes('Invalid JSON', 400, origin) }
+
+      const { event, certId, score, domain } = body
+      const userKey = `user_${(payload.email as string).toLowerCase()}`
+      const stored = await env.USER_KV.get(userKey)
+
+      if (stored) {
+        const userData = JSON.parse(stored) as StoredUser
+        userData.lastActive = new Date().toISOString()
+
+        if (event === 'exam_completed' && certId && score !== undefined) {
+          userData.examsCompleted = (userData.examsCompleted ?? 0) + 1
+          userData.lastExamScore = score
+          userData.lastExamCert = certId
+          if (!userData.certsStudied?.includes(certId)) {
+            userData.certsStudied = [...(userData.certsStudied ?? []), certId]
+          }
+        }
+
+        if (event === 'domain_studied' && certId && domain) {
+          if (!userData.certsStudied?.includes(certId)) {
+            userData.certsStudied = [...(userData.certsStudied ?? []), certId]
+          }
+        }
+
+        await env.USER_KV.put(userKey, JSON.stringify(userData))
+      }
+
+      return jsonRes({ ok: true }, 200, origin)
+    }
+
+    // ── Admin: DELETE /api/admin/users/:email ─────────────────────────────────
+
+    if (url.pathname.startsWith('/api/admin/users/') && request.method === 'DELETE') {
+      try {
+        await requireAdmin(request, env)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorRes(msg, msg === 'Forbidden' ? 403 : 401, origin)
+      }
+      const email = decodeURIComponent(url.pathname.split('/api/admin/users/')[1] ?? '')
+      if (!email) return errorRes('Missing email', 400, origin)
+      await env.USER_KV.delete(`user_${email.toLowerCase()}`)
+      return jsonRes({ deleted: email }, 200, origin)
+    }
+
+    // ── Admin: GET/POST /api/admin/settings ───────────────────────────────────
+
+    if (url.pathname === '/api/admin/settings') {
+      try {
+        await requireAdmin(request, env)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorRes(msg, msg === 'Forbidden' ? 403 : 401, origin)
+      }
+
+      if (request.method === 'GET') {
+        const [maintenance, featuredCert, banner] = await Promise.all([
+          env.USER_KV.get('settings_maintenance'),
+          env.USER_KV.get('settings_featured_cert'),
+          env.USER_KV.get('settings_banner'),
+        ])
+        return jsonRes({ maintenance: maintenance === 'true', featuredCert: featuredCert ?? '', banner: banner ?? '' }, 200, origin)
+      }
+
+      if (request.method === 'POST') {
+        let body: { maintenance?: boolean; featuredCert?: string; banner?: string }
+        try { body = await request.json() } catch { return errorRes('Invalid JSON', 400, origin) }
+        await Promise.all([
+          env.USER_KV.put('settings_maintenance', body.maintenance ? 'true' : 'false'),
+          env.USER_KV.put('settings_featured_cert', body.featuredCert ?? ''),
+          env.USER_KV.put('settings_banner', body.banner ?? ''),
+        ])
+        return jsonRes({ ok: true }, 200, origin)
       }
     }
 

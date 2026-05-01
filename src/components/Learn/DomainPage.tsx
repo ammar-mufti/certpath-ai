@@ -4,6 +4,7 @@ import { fromDomainSlug, toTopicSlug } from '../../utils/domainUtils'
 import { useStageContent } from '../../hooks/useStageContent'
 import { useLearnStore } from '../../store/learnStore'
 import { contentCache } from '../../services/contentCache'
+import { tracker } from '../../services/activityTracker'
 import { getCert } from '../../data/certifications'
 import type { Stage1Summary, Stage2Topic, Stage4Question } from '../../types/content'
 import Stage1SummaryComponent from './Stage1Summary'
@@ -139,7 +140,10 @@ export default function DomainPage({ certId }: Props) {
   const s4 = useStageContent<Stage4Question[]>(certId, domain, 'stage4-quiz')
 
   useEffect(() => {
-    if (domain && certDomain) s1.load()
+    if (domain && certDomain) {
+      s1.load()
+      tracker.domainStudied(certId, domain)
+    }
   }, [domain]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

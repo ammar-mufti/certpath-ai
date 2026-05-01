@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useExamStore } from '../store/examStore'
 import { useHistoryStore, buildDomainScores } from '../store/historyStore'
 import { getCert } from '../data/certifications'
+import { tracker } from '../services/activityTracker'
 import TopNav from '../components/Nav/TopNav'
 import ScoreRing from '../components/Results/ScoreRing'
 import DomainBreakdown from '../components/Results/DomainBreakdown'
@@ -44,6 +45,7 @@ export default function ResultsPage() {
     }
 
     useHistoryStore.getState().addAttempt(attempt)
+    tracker.examCompleted(certId, pct)
   }, [submitted, questions.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!submitted || questions.length === 0) return null

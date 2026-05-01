@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
+import AdminRoute from './components/Admin/AdminRoute'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
@@ -10,6 +11,8 @@ import ExamPage from './pages/ExamPage'
 import ResultsPage from './pages/ResultsPage'
 import HistoryPage from './pages/HistoryPage'
 import ComingSoonPage from './pages/ComingSoonPage'
+import AdminPage from './pages/AdminPage'
+import MaintenancePage from './pages/MaintenancePage'
 import TutorChat from './components/AI/TutorChat'
 import { getCert } from './data/certifications'
 
@@ -59,14 +62,34 @@ function CertHistoryPage() {
   return <HistoryPage certId={certId} />
 }
 
+function AnnouncementBanner() {
+  const [banner, setBanner] = useState<string | null>(null)
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_WORKER_URL}/api/health`)
+      .then(r => r.json())
+      .then((data: { banner?: string }) => { if (data.banner) setBanner(data.banner) })
+      .catch(() => {})
+  }, [])
+  if (!banner) return null
+  return (
+    <div className="bg-gold text-navy text-xs text-center py-2 px-4 font-medium flex items-center justify-center gap-2">
+      <span>{banner}</span>
+      <button onClick={() => setBanner(null)} className="opacity-60 hover:opacity-100 ml-1">✕</button>
+    </div>
+  )
+}
+
 export default function App() {
   const init = useAuthStore(s => s.init)
+  const user = useAuthStore(s => s.user)
+  const [maintenance, setMaintenance] = useState(false)
   useEffect(() => { init() }, [init])
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_WORKER_URL}/api/health`)
       .then(r => r.json())
-      .then((data: { status: string; groq: string; keyPrefix: string }) => {
+      .then((data: { status: string; groq: string; keyPrefix: string; maintenance?: boolean }) => {
+        if (data.maintenance && !user?.isAdmin) setMaintenance(true)
         if (data.status !== 'healthy') {
           console.error('[health] Worker unhealthy:', data)
         } else {
@@ -74,15 +97,21 @@ export default function App() {
         }
       })
       .catch(e => console.error('[health] check failed:', e))
-  }, [])
+  }, [user?.isAdmin])
+
+  if (maintenance) return <MaintenancePage />
 
   return (
     <BrowserRouter basename="/certpath-ai">
+      <AnnouncementBanner />
       <OfflineBanner />
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+
+        {/* Admin */}
+        <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
 
         {/* Dashboard */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

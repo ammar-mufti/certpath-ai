@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string
   avatar: string | null
   provider: 'github' | 'google' | 'email'
+  isAdmin?: boolean
 }
 
 interface AuthState {
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             email: payload.email ?? '',
             avatar: payload.avatar ?? null,
             provider: payload.provider ?? 'github',
+            isAdmin: payload.isAdmin === true,
           },
           isLoading: false,
         })
@@ -67,6 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           email: payload.email ?? '',
           avatar: payload.avatar ?? null,
           provider: payload.provider ?? 'github',
+          isAdmin: payload.isAdmin === true,
         },
       })
     }
