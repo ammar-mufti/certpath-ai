@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setAuth(user: AuthUser, token: string) {
     storeToken(token)
-    set({ token, user })
+    set({ token, user, isLoading: false })
   },
 
   setToken(token: string) {
@@ -62,6 +62,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (payload) {
       set({
         token,
+        isLoading: false,
         user: {
           id: payload.id ?? `legacy_${payload.login}`,
           login: payload.login,
