@@ -52,6 +52,7 @@ export default function LoginPage() {
             email: payload.email ?? '',
             avatar: payload.avatar ?? null,
             provider: payload.provider ?? 'github',
+            isAdmin: (payload as unknown as Record<string, unknown>).isAdmin === true,
           }, token)
           window.history.replaceState({}, '', window.location.pathname)
           navigate('/dashboard', { replace: true })

@@ -8,7 +8,8 @@ function load(): ExamAttempt[] {
   try {
     const newData = localStorage.getItem(STORAGE_KEY)
     if (newData) return JSON.parse(newData)
-    // Migrate legacy CCXP history
+    // MIGRATION: Legacy ccxp_exam_history → certpath_exam_history with certId/certName fields added.
+    // Safe to remove once no user has ccxp_exam_history remaining in localStorage.
     const legacy = localStorage.getItem('ccxp_exam_history')
     if (legacy) {
       const parsed = JSON.parse(legacy) as Omit<ExamAttempt, 'certId' | 'certName'>[]

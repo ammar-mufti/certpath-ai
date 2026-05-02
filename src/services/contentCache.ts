@@ -8,6 +8,8 @@ interface CacheEntry {
   type: string
 }
 
+// MIGRATION: Legacy bare ccxp_{Domain}_{type} keys → ccxp_ccxp_{Domain}_{type} (certId-prefixed format).
+// Safe to remove once no user has bare ccxp_{Domain}_ keys remaining in localStorage.
 function migrateLegacyCacheKeys() {
   const legacyDomains = [
     'CX Strategy',
@@ -22,6 +24,7 @@ function migrateLegacyCacheKeys() {
     for (const domain of legacyDomains) {
       const legacyPrefix = `ccxp_${domain}_`
       if (key.startsWith(legacyPrefix) && !key.startsWith('ccxp_ccxp_')) {
+        // Intentional double-prefix: old key is ccxp_{Domain}_{type}, new key is ccxp_ccxp_{Domain}_{type}
         const newKey = 'ccxp_' + key
         const value = localStorage.getItem(key)
         if (value) {
@@ -120,8 +123,3 @@ export const contentCache = {
   },
 }
 
-export function cacheGet<T>(key: string): T | null { return contentCache.get<T>(key) }
-export function cacheSet(key: string, data: unknown): void { contentCache.set(key, data, '', '') }
-export function cacheKey(certId: string, domain: string, type: string): string {
-  return `${certId}_${domain}_${type}`
-}

@@ -19,9 +19,10 @@ const MAX_SETS = 10
 
 function loadSets(): SavedQuestionSet[] {
   try {
-    // Try new key first, fall back to legacy
     const newData = localStorage.getItem(STORAGE_KEY)
     if (newData) return JSON.parse(newData)
+    // MIGRATION: Legacy ccxp_question_bank → certpath_question_bank with certId/certName fields added.
+    // Safe to remove once no user has ccxp_question_bank remaining in localStorage.
     const legacy = localStorage.getItem('ccxp_question_bank')
     if (legacy) {
       const parsed = JSON.parse(legacy) as Omit<SavedQuestionSet, 'certId' | 'certName'>[]

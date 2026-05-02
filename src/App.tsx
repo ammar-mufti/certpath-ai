@@ -62,76 +62,87 @@ function CertHistoryPage() {
   return <HistoryPage certId={certId} />
 }
 
-function AnnouncementBanner() {
-  const [banner, setBanner] = useState<string | null>(null)
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_WORKER_URL}/api/health`)
-      .then(r => r.json())
-      .then((data: { banner?: string }) => { if (data.banner) setBanner(data.banner) })
-      .catch(() => {})
-  }, [])
+interface HealthData {
+  status: string
+  groq?: string
+  keyPrefix?: string
+  keyLength?: number
+  maintenance?: boolean
+  banner?: string
+  timestamp?: string
+}
+
+function AnnouncementBanner({ banner, onDismiss }: { banner: string | null; onDismiss: () => void }) {
   if (!banner) return null
   return (
     <div className="bg-gold text-navy text-xs text-center py-2 px-4 font-medium flex items-center justify-center gap-2">
       <span>{banner}</span>
-      <button onClick={() => setBanner(null)} className="opacity-60 hover:opacity-100 ml-1">✕</button>
+      <button onClick={onDismiss} className="opacity-60 hover:opacity-100 ml-1">✕</button>
     </div>
   )
 }
 
+function MaintenanceGate({ children, maintenance }: { children: React.ReactNode; maintenance: boolean }) {
+  const user = useAuthStore(s => s.user)
+  const isLoading = useAuthStore(s => s.isLoading)
+  if (maintenance && !isLoading && !user?.isAdmin) return <MaintenancePage />
+  return <>{children}</>
+}
+
 export default function App() {
   const init = useAuthStore(s => s.init)
-  const user = useAuthStore(s => s.user)
-  const [maintenance, setMaintenance] = useState(false)
+  const [health, setHealth] = useState<HealthData | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
+
   useEffect(() => { init() }, [init])
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_WORKER_URL}/api/health`)
       .then(r => r.json())
-      .then((data: { status: string; groq: string; keyPrefix: string; maintenance?: boolean }) => {
-        if (data.maintenance && !user?.isAdmin) setMaintenance(true)
-        if (data.status !== 'healthy') {
-          console.error('[health] Worker unhealthy:', data)
-        } else {
-          console.log(`[health] Groq connected (key: ${data.keyPrefix}…)`)
-        }
+      .then((data: HealthData) => {
+        setHealth(data)
+        if (data.status !== 'healthy') console.error('[health] Worker unhealthy:', data)
+        else console.log(`[health] Groq connected (key: ${data.keyPrefix}…)`)
       })
       .catch(e => console.error('[health] check failed:', e))
-  }, [user?.isAdmin])
-
-  if (maintenance) return <MaintenancePage />
+  }, []) // run once only — never re-run
 
   return (
     <BrowserRouter basename="/certpath-ai">
-      <AnnouncementBanner />
+      <AnnouncementBanner
+        banner={bannerDismissed ? null : (health?.banner ?? null)}
+        onDismiss={() => setBannerDismissed(true)}
+      />
       <OfflineBanner />
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+      <MaintenanceGate maintenance={health?.maintenance ?? false}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
+          {/* Admin */}
+          <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
 
-        {/* Dashboard */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          {/* Dashboard */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-        {/* Cert-scoped routes */}
-        <Route path="/:certId/learn" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
-        <Route path="/:certId/learn/:domainSlug" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
-        <Route path="/:certId/exam/*" element={<ProtectedRoute><CertExamPage /></ProtectedRoute>} />
-        <Route path="/:certId/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
-        <Route path="/:certId/history" element={<ProtectedRoute><CertHistoryPage /></ProtectedRoute>} />
+          {/* Cert-scoped routes */}
+          <Route path="/:certId/learn" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
+          <Route path="/:certId/learn/:domainSlug" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
+          <Route path="/:certId/exam/*" element={<ProtectedRoute><CertExamPage /></ProtectedRoute>} />
+          <Route path="/:certId/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+          <Route path="/:certId/history" element={<ProtectedRoute><CertHistoryPage /></ProtectedRoute>} />
 
-        {/* Legacy redirects */}
-        <Route path="/learn" element={<Navigate to="/ccxp/learn" replace />} />
-        <Route path="/learn/:domainSlug" element={<Navigate to="/ccxp/learn" replace />} />
-        <Route path="/exam/*" element={<Navigate to="/ccxp/exam" replace />} />
-        <Route path="/results" element={<Navigate to="/ccxp/results" replace />} />
-        <Route path="/history" element={<Navigate to="/ccxp/history" replace />} />
+          {/* Legacy redirects */}
+          <Route path="/learn" element={<Navigate to="/ccxp/learn" replace />} />
+          <Route path="/learn/:domainSlug" element={<Navigate to="/ccxp/learn" replace />} />
+          <Route path="/exam/*" element={<Navigate to="/ccxp/exam" replace />} />
+          <Route path="/results" element={<Navigate to="/ccxp/results" replace />} />
+          <Route path="/history" element={<Navigate to="/ccxp/history" replace />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </MaintenanceGate>
       <TutorChatWrapper />
     </BrowserRouter>
   )

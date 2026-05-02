@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { callLLM } from '../services/llm'
+import { callLLM, extractJson } from '../services/llm'
 import type { Question, ExamMode } from '../store/examStore'
 import { useExamStore } from '../store/examStore'
 import { useAuthStore } from '../store/authStore'
@@ -11,6 +11,19 @@ import type { CertDomain } from '../data/certifications'
 const CHUNK_SIZE = 5
 const CHUNK_RETRIES = 3
 const RETRY_DELAY_MS = 2000
+const DEDUP_KEY_LEN = 60
+
+function getQuestionKey(q: Question | string): string {
+  return (typeof q === 'string' ? q : q.q).trim().toLowerCase().substring(0, DEDUP_KEY_LEN)
+}
+
+async function withRetry<T>(fn: () => Promise<T>, attempts: number, delayMs: number): Promise<T | null> {
+  for (let i = 0; i < attempts; i++) {
+    try { return await fn() } catch { /* retry */ }
+    if (i < attempts - 1) await new Promise(r => setTimeout(r, delayMs))
+  }
+  return null
+}
 
 // Domain-specific context for CCXP questions (legacy — for backward compat)
 const CCXP_DOMAIN_CONTEXT: Record<string, string> = {
@@ -148,32 +161,17 @@ function validateBatch(batch: Question[]): boolean {
 }
 
 function parseQuestions(raw: unknown, domain: string, certDomain?: CertDomain): Question[] {
-  try {
-    let arr: unknown[] = []
-    if (Array.isArray(raw)) {
-      arr = raw
-    } else if (typeof raw === 'string') {
-      const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const match = cleaned.match(/\[[\s\S]*\]/)
-      if (match) arr = JSON.parse(match[0])
-    } else if (raw && typeof raw === 'object' && 'content' in raw) {
-      return parseQuestions((raw as { content: unknown }).content, domain, certDomain)
+  const arr = extractJson<unknown[]>(raw, 'array')
+  if (!arr) return []
+  const topics = certDomain?.topics ?? []
+  return arr.map(q => {
+    const question = { ...(q as object), id: crypto.randomUUID(), domain } as Question
+    if (!question.sourceTopic && topics.length > 0) {
+      question.sourceTopic = topics[0]
+      question.sourceTopicSlug = toTopicSlug(topics[0])
     }
-    if (arr.length > 0) {
-      const topics = certDomain?.topics ?? []
-      return arr.map(q => {
-        const question = { ...(q as object), id: crypto.randomUUID(), domain } as Question
-        if (!question.sourceTopic && topics.length > 0) {
-          question.sourceTopic = topics[0]
-          question.sourceTopicSlug = toTopicSlug(topics[0])
-        }
-        return question
-      })
-    }
-  } catch {
-    // fall through
-  }
-  return []
+    return question
+  })
 }
 
 function fisherYates<T>(arr: T[]): T[] {
@@ -211,7 +209,7 @@ const CCXP_FALLBACKS: Record<string, Question[]> = {
 function getFallback(certId: string, domain: string, seen: Set<string>): Question | null {
   const pool = certId === 'ccxp' ? (CCXP_FALLBACKS[domain] ?? []) : []
   for (const q of pool) {
-    const key = q.q.trim().toLowerCase().substring(0, 60)
+    const key = getQuestionKey(q)
     if (!seen.has(key)) {
       seen.add(key)
       return { ...q, id: crypto.randomUUID() }
@@ -305,54 +303,39 @@ export function useQuestionGen(certId: string) {
           certDomain
         )
 
-        let chunkSuccess = false
-        for (let attempt = 0; attempt < CHUNK_RETRIES; attempt++) {
-          try {
-            const raw = await callLLM(
-              {
-                type: 'generate-questions',
-                domain: d,
-                count: chunkSize,
-                extra: prompt,
-                certId,
-                certName: cert?.name ?? certId,
-                certFullName: cert?.fullName ?? certId,
-                certIssuer: cert?.issuer ?? '',
-                passingScore: cert?.passingScore ?? 70,
-                difficulty: cert?.difficulty ?? 'Advanced',
-                examQuestions: cert?.examQuestions ?? 100,
-              },
-              token
-            )
-            const batch = parseQuestions(raw, d, certDomain)
+        const chunkResult = await withRetry(async () => {
+          const raw = await callLLM(
+            {
+              type: 'generate-questions',
+              domain: d,
+              count: chunkSize,
+              extra: prompt,
+              certId,
+              certName: cert?.name ?? certId,
+              certFullName: cert?.fullName ?? certId,
+              certIssuer: cert?.issuer ?? '',
+              passingScore: cert?.passingScore ?? 70,
+              difficulty: cert?.difficulty ?? 'Advanced',
+              examQuestions: cert?.examQuestions ?? 100,
+            },
+            token
+          )
+          const batch = parseQuestions(raw, d, certDomain)
+          if (batch.length === 0) throw new Error('empty batch')
+          if (batch.length >= 2 && !validateBatch(batch)) throw new Error('duplicate openings')
+          return batch
+        }, CHUNK_RETRIES, RETRY_DELAY_MS)
 
-            if (batch.length === 0) {
-              if (attempt < CHUNK_RETRIES - 1) await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-              continue
-            }
-
-            if (batch.length >= 2 && !validateBatch(batch)) {
-              if (attempt < CHUNK_RETRIES - 1) await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-              continue
-            }
-
-            const uniqueBatch = batch.filter(q => {
-              const key = q.q.trim().toLowerCase().substring(0, 60)
-              if (seenQuestions.has(key)) return false
-              seenQuestions.add(key)
-              return true
-            })
-
-            domainQuestions.push(...uniqueBatch)
-            questionsCollected += uniqueBatch.length
-            chunkSuccess = true
-            break
-          } catch (err) {
-            console.warn(`[QuestionGen] ${d} chunk attempt ${attempt + 1} threw:`, err)
-            if (attempt < CHUNK_RETRIES - 1) {
-              await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-            }
-          }
+        const chunkSuccess = chunkResult !== null
+        if (chunkSuccess) {
+          const uniqueBatch = chunkResult!.filter(q => {
+            const key = getQuestionKey(q)
+            if (seenQuestions.has(key)) return false
+            seenQuestions.add(key)
+            return true
+          })
+          domainQuestions.push(...uniqueBatch)
+          questionsCollected += uniqueBatch.length
         }
 
         if (!chunkSuccess) {
@@ -403,40 +386,37 @@ export function useQuestionGen(certId: string) {
         certDomain
       )
 
-      for (let attempt = 0; attempt < CHUNK_RETRIES; attempt++) {
-        try {
-          const raw = await callLLM(
-            {
-              type: 'generate-questions',
-              domain: d,
-              count: Math.min(deficit, CHUNK_SIZE),
-              extra: gapPrompt,
-              certId,
-              certName: cert?.name ?? certId,
-            },
-            token
-          )
-          const batch = parseQuestions(raw, d, certDomain)
-          const unique = batch.filter(q => {
-            const key = q.q.trim().toLowerCase().substring(0, 60)
-            if (seenQuestions.has(key)) return false
-            seenQuestions.add(key)
-            return true
-          })
-          allQuestions.push(...unique)
-          questionsCollected += unique.length
-          break
-        } catch (err) {
-          console.warn(`[QuestionGen] ${d} gap-fill attempt ${attempt + 1} failed:`, err)
-          if (attempt < CHUNK_RETRIES - 1) await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-        }
+      const gapResult = await withRetry(async () => {
+        const raw = await callLLM(
+          {
+            type: 'generate-questions',
+            domain: d,
+            count: Math.min(deficit, CHUNK_SIZE),
+            extra: gapPrompt,
+            certId,
+            certName: cert?.name ?? certId,
+          },
+          token
+        )
+        return parseQuestions(raw, d, certDomain)
+      }, CHUNK_RETRIES, RETRY_DELAY_MS)
+
+      if (gapResult) {
+        const unique = gapResult.filter(q => {
+          const key = getQuestionKey(q)
+          if (seenQuestions.has(key)) return false
+          seenQuestions.add(key)
+          return true
+        })
+        allQuestions.push(...unique)
+        questionsCollected += unique.length
       }
     }
 
     // Final dedup
     const finalSeen = new Set<string>()
     const dedupedQuestions = allQuestions.filter(q => {
-      const key = q.q.trim().toLowerCase().substring(0, 60)
+      const key = getQuestionKey(q)
       if (finalSeen.has(key)) return false
       finalSeen.add(key)
       return true

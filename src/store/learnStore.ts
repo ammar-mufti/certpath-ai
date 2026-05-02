@@ -49,9 +49,10 @@ const STORAGE_KEY = 'certpath_learn_progress'
 
 function loadProgress(): Record<string, DomainProgress> {
   try {
-    // Try new key first, fall back to legacy
     const newData = localStorage.getItem(STORAGE_KEY)
     if (newData) return JSON.parse(newData)
+    // MIGRATION: Legacy ccxp_learn_progress → certpath_learn_progress with ccxp:: key prefix added.
+    // Safe to remove once no user has ccxp_learn_progress remaining in localStorage.
     const legacy = localStorage.getItem('ccxp_learn_progress')
     if (legacy) {
       const parsed = JSON.parse(legacy) as Record<string, DomainProgress>
