@@ -55,15 +55,14 @@ export default function LoginPage() {
             isAdmin: (payload as unknown as Record<string, unknown>).isAdmin === true,
           }, token)
           window.history.replaceState({}, '', window.location.pathname)
-          navigate('/dashboard', { replace: true })
         }
       } catch {
         setError('Sign-in failed — please try again')
       }
     }
-  }, [params, setAuth, navigate])
+  }, [params, setAuth])
 
-  // Redirect already-logged-in users
+  // Redirect any logged-in user away from login page
   useEffect(() => {
     if (user) navigate('/dashboard', { replace: true })
   }, [user, navigate])
@@ -110,7 +109,7 @@ export default function LoginPage() {
 
       if (data.token && data.user) {
         setAuth(data.user, data.token)
-        navigate('/dashboard', { replace: true })
+        // navigate is triggered by the user-watch effect above
       }
     } catch {
       setError('Connection failed — please try again')
