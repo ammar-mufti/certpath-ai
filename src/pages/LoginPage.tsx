@@ -109,7 +109,7 @@ export default function LoginPage() {
 
       if (data.token && data.user) {
         setAuth(data.user, data.token)
-        // navigate is triggered by the user-watch effect above
+        navigate('/dashboard', { replace: true })
       }
     } catch {
       setError('Connection failed — please try again')

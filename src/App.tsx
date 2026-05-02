@@ -33,6 +33,18 @@ function OfflineBanner() {
   )
 }
 
+function RootRedirect() {
+  const user = useAuthStore(s => s.user)
+  const isLoading = useAuthStore(s => s.isLoading)
+  if (isLoading) return (
+    <div className="min-h-screen bg-navy flex items-center justify-center">
+      <div className="text-gold text-lg animate-pulse">Loading…</div>
+    </div>
+  )
+  if (user) return <Navigate to="/dashboard" replace />
+  return <LandingPage />
+}
+
 function TutorChatWrapper() {
   const user = useAuthStore(s => s.user)
   if (!user) return null
@@ -117,7 +129,7 @@ export default function App() {
       <MaintenanceGate maintenance={health?.maintenance ?? false}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* Admin */}
