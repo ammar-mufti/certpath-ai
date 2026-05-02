@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import AdminRoute from './components/Admin/AdminRoute'
@@ -40,26 +40,26 @@ function TutorChatWrapper() {
 }
 
 function CertLearnPage() {
-  const certId = window.location.pathname.split('/')[1]
-  const cert = getCert(certId)
+  const { certId } = useParams<{ certId: string }>()
+  const cert = getCert(certId ?? '')
   if (!cert) return <Navigate to="/dashboard" replace />
   if (!cert.isAvailable) return <ComingSoonPage />
-  return <LearnPage certId={certId} />
+  return <LearnPage certId={certId!} />
 }
 
 function CertExamPage() {
-  const certId = window.location.pathname.split('/')[1]
-  const cert = getCert(certId)
+  const { certId } = useParams<{ certId: string }>()
+  const cert = getCert(certId ?? '')
   if (!cert) return <Navigate to="/dashboard" replace />
   if (!cert.isAvailable) return <ComingSoonPage />
-  return <ExamPage certId={certId} />
+  return <ExamPage certId={certId!} />
 }
 
 function CertHistoryPage() {
-  const certId = window.location.pathname.split('/')[1]
-  const cert = getCert(certId)
+  const { certId } = useParams<{ certId: string }>()
+  const cert = getCert(certId ?? '')
   if (!cert) return <Navigate to="/dashboard" replace />
-  return <HistoryPage certId={certId} />
+  return <HistoryPage certId={certId!} />
 }
 
 interface HealthData {
