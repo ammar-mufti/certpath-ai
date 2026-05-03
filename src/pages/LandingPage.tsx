@@ -1,66 +1,39 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { useTheme } from '../hooks/useTheme'
 import { AVAILABLE_CERTS, COMING_SOON_CERTS } from '../data/certifications'
 import type { Certification } from '../data/certifications'
 
-function DifficultyBar({ level }: { level: Certification['difficulty'] }) {
-  const bars = level === 'Beginner' ? 1 : level === 'Intermediate' ? 2 : 3
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex gap-0.5">
-        {[1, 2, 3].map(i => (
-          <div
-            key={i}
-            className="w-5 h-1 rounded-full transition-colors"
-            style={{ backgroundColor: i <= bars ? '#C9A84C' : '#1A2B3C' }}
-          />
-        ))}
-      </div>
-      <span className="text-mist/70 text-xs">{level}</span>
-    </div>
-  )
-}
-
 function CertCard({ cert, onStart }: { cert: Certification; onStart: (id: string) => void }) {
   return (
-    <div
-      className="bg-ink border border-white/[0.07] hover:border-white/20 rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5 hover:shadow-ink card-spotlight"
-      style={{ borderTopColor: cert.color + '50', borderTopWidth: '2px' }}
+    <button
       onClick={() => onStart(cert.id)}
+      className="group text-left p-5 bg-surface-container rounded-xl border border-outline-variant hover:border-primary/50 hover:bg-surface-container-high transition-all duration-300 hover:-translate-y-0.5"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="text-2xl">{cert.icon}</span>
-            <span className="font-bold text-lg tracking-tight group-hover:opacity-90 transition-opacity" style={{ color: cert.color }}>{cert.name}</span>
-          </div>
-          <div className="text-cream/70 text-sm leading-snug">{cert.fullName}</div>
-          <div className="text-mist/40 text-xs mt-0.5">{cert.issuer}</div>
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-3xl">{cert.icon}</span>
+        <div className="min-w-0">
+          <h3 className="font-serif text-base font-semibold text-on-surface group-hover:text-primary transition-colors">
+            {cert.name}
+          </h3>
+          <p className="text-label text-on-surface-variant text-xs">{cert.issuer}</p>
         </div>
-        <div
-          className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5 opacity-60"
-          style={{ backgroundColor: cert.color }}
-        />
       </div>
-
-      <div className="flex items-center gap-3 text-xs text-mist/60 tabular">
+      <p className="text-body-sm text-on-surface-variant mb-4 leading-relaxed text-sm line-clamp-2">{cert.about}</p>
+      <div className="flex items-center gap-3 text-xs text-on-surface-variant font-medium tabular">
         <span>{cert.examQuestions}Q</span>
-        <span className="text-white/15">·</span>
-        <span>{cert.examDuration}min</span>
-        <span className="text-white/15">·</span>
+        <span className="text-outline-variant">·</span>
         <span>Pass {cert.passingScore}%</span>
+        <span className="text-outline-variant">·</span>
+        <span className={
+          cert.difficulty === 'Beginner' ? 'text-primary' :
+          cert.difficulty === 'Intermediate' ? 'text-secondary' : 'text-error'
+        }>
+          {cert.difficulty}
+        </span>
       </div>
-
-      <DifficultyBar level={cert.difficulty} />
-
-      <button
-        className="mt-auto w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-        style={{ backgroundColor: cert.color + 'ee', color: '#0D1B2A' }}
-      >
-        Start studying
-      </button>
-    </div>
+    </button>
   )
 }
 
@@ -81,36 +54,28 @@ function ComingSoonCard({ cert }: { cert: Certification }) {
   }
 
   return (
-    <div className="bg-ink/50 border border-white/[0.04] rounded-2xl p-6 flex flex-col gap-3 opacity-60">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="text-2xl grayscale opacity-50">{cert.icon}</span>
-            <span className="font-bold text-mist text-lg tracking-tight">{cert.name}</span>
-          </div>
-          <div className="text-mist/50 text-sm leading-snug">{cert.fullName}</div>
-          <div className="text-mist/30 text-xs mt-0.5">{cert.issuer}</div>
+    <div className="text-left p-5 bg-surface-container-low rounded-xl border border-outline-variant opacity-55">
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-3xl grayscale opacity-50">{cert.icon}</span>
+        <div className="min-w-0">
+          <h3 className="font-serif text-base font-semibold text-on-surface-variant">{cert.name}</h3>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
+            Coming soon
+          </span>
         </div>
-        <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-mist/50 flex-shrink-0 whitespace-nowrap tracking-wide uppercase font-medium">
-          Soon
-        </span>
       </div>
-
       {saved ? (
-        <div className="text-pass/80 text-xs">We'll let you know when {cert.name} is ready.</div>
+        <p className="text-xs text-on-surface-variant">We'll let you know when {cert.name} is ready.</p>
       ) : (
-        <form onSubmit={handleNotify} className="flex gap-2">
+        <form onSubmit={handleNotify} className="flex gap-2 mt-3">
           <input
             type="email"
             placeholder="your@email.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="flex-1 bg-navy/80 border border-white/10 rounded-lg px-3 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/40 placeholder-mist/30"
+            className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-3 py-1.5 text-on-surface text-xs focus:outline-none focus:border-primary/50 placeholder-on-surface-variant/40"
           />
-          <button
-            type="submit"
-            className="px-3 py-1.5 bg-white/8 hover:bg-white/12 text-mist/70 text-xs rounded-lg transition-colors whitespace-nowrap"
-          >
+          <button type="submit" className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs rounded-lg transition-colors whitespace-nowrap font-medium">
             Notify me
           </button>
         </form>
@@ -122,77 +87,73 @@ function ComingSoonCard({ cert }: { cert: Certification }) {
 export default function LandingPage() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
+  const { isDark, toggle } = useTheme()
 
   function handleStart(certId: string) {
     navigate(user ? `/${certId}/learn` : '/login')
   }
 
-  function handleCTA() {
-    navigate(user ? '/dashboard' : '/login')
-  }
-
   return (
-    <div className="min-h-dvh bg-navy text-cream">
+    <div className="min-h-dvh bg-background text-on-surface">
 
       {/* Nav */}
-      <nav className="border-b border-white/[0.07] sticky top-0 z-50 bg-navy/96 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
-          <span className="text-gold font-serif text-xl tracking-tight">CertPath AI</span>
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 bg-surface-container/90 backdrop-blur-md border-b border-outline-variant">
+        <div className="max-w-7xl mx-auto px-5 h-14 flex items-center justify-between">
+          <span className="text-xl font-bold font-serif text-primary">CertPath AI</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggle}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-all text-on-surface-variant hover:text-primary"
+              title={isDark ? 'Light mode' : 'Dark mode'}
+            >
+              <span className="material-symbols-outlined">{isDark ? 'light_mode' : 'dark_mode'}</span>
+            </button>
             {user ? (
-              <>
-                {user.avatar && <img src={user.avatar} alt={user.name ?? user.login} className="w-7 h-7 rounded-full ring-1 ring-white/10" />}
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-gold text-navy font-semibold px-4 py-1.5 rounded-lg text-sm hover:brightness-110 transition-all duration-200 active:scale-[0.98]"
-                >
-                  Dashboard
-                </button>
-              </>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="bg-primary text-on-primary font-semibold px-4 py-1.5 rounded-full text-sm hover:brightness-110 transition-all active:scale-[0.98]"
+              >
+                Dashboard
+              </button>
             ) : (
               <button
                 onClick={() => navigate('/login')}
-                className="bg-gold text-navy font-semibold px-4 py-1.5 rounded-lg text-sm hover:brightness-110 transition-all duration-200 active:scale-[0.98]"
+                className="bg-primary text-on-primary font-semibold px-4 py-1.5 rounded-full text-sm hover:brightness-110 transition-all active:scale-[0.98]"
               >
                 Sign in
               </button>
             )}
           </div>
         </div>
-      </nav>
+      </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        {/* Ambient glow */}
+      <section className="relative overflow-hidden pt-24 pb-20 px-5 text-center">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gold/[0.04] rounded-full blur-3xl" />
-          <div className="absolute top-20 right-0 w-96 h-96 bg-domain-strategy/[0.03] rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/[0.05] rounded-full blur-3xl" />
         </div>
-
-        <div className="relative max-w-4xl mx-auto px-5 pt-24 pb-20 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/20 bg-gold/5 text-gold text-xs font-medium mb-8 tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-            AI-powered certification prep
-          </div>
-
-          <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl mb-6 leading-[1.05] tracking-tight">
+        <div className="relative max-w-4xl mx-auto">
+          <span className="inline-block font-label text-primary uppercase tracking-widest mb-5 text-xs">
+            AI-powered · free forever
+          </span>
+          <h1 className="font-serif text-display font-bold text-on-surface leading-tight mb-5">
             Ace your next<br />
-            <span className="text-gold">certification</span>
+            <span className="text-primary">certification</span>
           </h1>
-          <p className="text-mist text-lg sm:text-xl max-w-xl mx-auto mb-10 leading-relaxed">
+          <p className="text-body-lg text-on-surface-variant max-w-xl mx-auto mb-10 leading-relaxed">
             AI study guides, practice exams, and a personal tutor — for the credentials that move your career forward.
           </p>
           <button
-            onClick={handleCTA}
-            className="bg-gold text-navy font-bold px-8 py-4 rounded-xl text-base hover:brightness-110 transition-all duration-200 shadow-gold hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+            onClick={() => navigate(user ? '/dashboard' : '/login')}
+            className="bg-primary text-on-primary font-bold px-10 py-4 rounded-full shadow-primary-btn hover:shadow-[0_0_24px_rgba(242,202,80,0.5)] hover:scale-105 active:scale-95 transition-all text-base uppercase tracking-wide"
           >
-            Start studying — it's free
+            Start studying free →
           </button>
         </div>
       </section>
 
-      {/* Stats bar */}
-      <section className="border-y border-white/[0.06] py-5 bg-ink/30">
+      {/* Stats */}
+      <section className="border-y border-outline-variant py-5 bg-surface-container">
         <div className="max-w-4xl mx-auto px-5 flex flex-wrap justify-center gap-x-12 gap-y-4 text-center">
           {[
             { n: '5', label: 'certifications' },
@@ -201,30 +162,27 @@ export default function LandingPage() {
             { n: 'Free', label: 'no credit card' },
           ].map(s => (
             <div key={s.label}>
-              <div className="text-gold font-bold text-xl tabular">{s.n}</div>
-              <div className="text-mist/60 text-xs mt-0.5">{s.label}</div>
+              <div className="text-primary font-bold text-xl tabular font-serif">{s.n}</div>
+              <div className="text-on-surface-variant text-xs mt-0.5">{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* Cert grid */}
-      <section className="max-w-6xl mx-auto px-5 py-20">
-        <div className="mb-12">
-          <h2 className="font-serif text-3xl mb-2 tracking-tight">Available now</h2>
-          <p className="text-mist/70">Choose your certification and start today.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-16">
+      <section className="max-w-5xl mx-auto px-5 py-16">
+        <h2 className="font-serif text-h2 text-on-surface mb-2">Choose your certification</h2>
+        <p className="text-on-surface-variant mb-10 text-sm">Start studying today — fully free, no account required to browse.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-14">
           {AVAILABLE_CERTS.map(cert => (
             <CertCard key={cert.id} cert={cert} onStart={handleStart} />
           ))}
         </div>
 
-        <div className="mb-10">
-          <h2 className="font-serif text-2xl mb-2 text-mist/70 tracking-tight">Coming soon</h2>
-          <p className="text-mist/40 text-sm">Join the waitlist and we'll let you know when these launch.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="font-serif text-h3 text-on-surface-variant mb-2">Coming soon</h2>
+        <p className="text-on-surface-variant/60 text-sm mb-8">Join the waitlist and we'll notify you when these launch.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {COMING_SOON_CERTS.map(cert => (
             <ComingSoonCard key={cert.id} cert={cert} />
           ))}
@@ -232,33 +190,21 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-ink/20 border-y border-white/[0.06] py-20">
+      <section className="bg-surface-container border-y border-outline-variant py-16">
         <div className="max-w-4xl mx-auto px-5">
-          <h2 className="font-serif text-3xl mb-3 tracking-tight">How it works</h2>
-          <p className="text-mist/60 mb-14 max-w-md">Three stages, one outcome: passing your exam with confidence.</p>
+          <h2 className="font-serif text-h2 text-on-surface mb-3">How it works</h2>
+          <p className="text-on-surface-variant mb-14 text-sm max-w-md">Three stages, one outcome: passing your exam with confidence.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
             {[
-              {
-                n: '01',
-                title: 'Choose your cert',
-                desc: 'Pick from five certifications across CX, project management, cloud, agile, and ITSM.',
-              },
-              {
-                n: '02',
-                title: 'Study with AI',
-                desc: 'Domain summaries, key concepts, flashcards, and practice questions — generated for your specific exam.',
-              },
-              {
-                n: '03',
-                title: 'Pass the exam',
-                desc: 'Track weak domains, run timed mock exams, and go into exam day knowing exactly where you stand.',
-              },
+              { n: '01', title: 'Choose your cert', desc: 'Pick from five certifications across CX, project management, cloud, agile, and ITSM.' },
+              { n: '02', title: 'Study with AI', desc: 'Domain summaries, key concepts, flashcards, and practice questions generated for your specific exam.' },
+              { n: '03', title: 'Pass the exam', desc: 'Track weak domains, run timed mock exams, and go into exam day knowing exactly where you stand.' },
             ].map(s => (
-              <div key={s.n} className="flex flex-col">
-                <div className="text-gold/40 font-serif text-5xl font-bold mb-4 leading-none tabular">{s.n}</div>
-                <h3 className="font-semibold text-cream text-base mb-2">{s.title}</h3>
-                <p className="text-mist/70 text-sm leading-relaxed">{s.desc}</p>
+              <div key={s.n}>
+                <div className="text-primary/30 font-serif text-5xl font-bold mb-4 leading-none tabular">{s.n}</div>
+                <h3 className="font-serif font-semibold text-on-surface text-base mb-2">{s.title}</h3>
+                <p className="text-on-surface-variant text-sm leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -266,16 +212,16 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] py-12">
+      <footer className="border-t border-outline-variant py-10">
         <div className="max-w-4xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <div className="text-gold font-serif text-lg mb-1">CertPath AI</div>
-            <p className="text-mist/40 text-xs">AI-powered prep for the certifications that advance your career.</p>
+            <div className="text-primary font-serif text-lg font-bold mb-1">CertPath AI</div>
+            <p className="text-on-surface-variant/50 text-xs">AI-powered prep for the certifications that advance your career.</p>
           </div>
-          <div className="flex flex-col items-end gap-2 text-xs text-mist/40">
-            <a href="mailto:muftiammar52@gmail.com" className="hover:text-mist/70 transition-colors">muftiammar52@gmail.com</a>
-            <a href="https://linkedin.com/in/ammarmufti" target="_blank" rel="noopener noreferrer" className="hover:text-mist/70 transition-colors">linkedin.com/in/ammarmufti</a>
-            <span className="text-mist/25">Built with Claude · GitHub Pages</span>
+          <div className="flex flex-col items-end gap-1.5 text-xs text-on-surface-variant/50">
+            <a href="mailto:muftiammar52@gmail.com" className="hover:text-on-surface-variant transition-colors">muftiammar52@gmail.com</a>
+            <a href="https://linkedin.com/in/ammarmufti" target="_blank" rel="noopener noreferrer" className="hover:text-on-surface-variant transition-colors">linkedin.com/in/ammarmufti</a>
+            <span className="text-on-surface-variant/30">Built with Claude · GitHub Pages</span>
           </div>
         </div>
       </footer>

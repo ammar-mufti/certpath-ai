@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import TopNav from '../components/Nav/TopNav'
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -55,17 +56,26 @@ function formatDate(iso: string | null) {
 }
 
 function ProviderBadge({ provider }: { provider: string }) {
-  if (provider === 'google') return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400">G</span>
-  if (provider === 'github') return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/10 text-mist">GH</span>
-  return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/5 text-mist/60">✉</span>
+  const styles: Record<string, string> = {
+    google: 'bg-blue-500/15 text-blue-400',
+    github: 'bg-surface-container-highest text-on-surface-variant',
+    email:  'bg-primary/15 text-primary',
+  }
+  return (
+    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${styles[provider] ?? styles.email}`}>
+      {provider}
+    </span>
+  )
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+function StatCard({ label, value, icon, color = 'text-primary' }: { label: string; value: string | number; icon: string; color?: string }) {
   return (
-    <div className="bg-ink border border-white/10 rounded-2xl p-5">
-      <p className="text-mist text-xs mb-1">{label}</p>
-      <p className="text-cream font-serif text-3xl">{value}</p>
-      {sub && <p className="text-mist/60 text-xs mt-1">{sub}</p>}
+    <div className="bg-surface-container rounded-xl p-5 border border-outline-variant">
+      <div className="flex items-center justify-between mb-3">
+        <span className={`material-symbols-outlined ${color}`}>{icon}</span>
+        <span className="font-label text-on-surface-variant text-[10px]">{label}</span>
+      </div>
+      <p className={`font-serif text-2xl font-bold tabular ${color}`}>{value}</p>
     </div>
   )
 }
@@ -73,68 +83,71 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 function UserModal({ user, onClose, onDelete }: { user: AdminUser; onClose: () => void; onDelete: (email: string) => void }) {
   const [confirming, setConfirming] = useState(false)
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-      <div className="bg-ink border border-white/20 rounded-2xl p-6 w-full max-w-md space-y-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+      <div className="bg-surface-container border border-outline-variant rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold text-lg flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg flex-shrink-0">
             {user.name.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <h3 className="text-cream font-semibold">{user.name}</h3>
-            <p className="text-mist text-sm">{user.email}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-on-surface font-semibold font-serif">{user.name}</h3>
+            <p className="text-on-surface-variant text-sm truncate">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
               <ProviderBadge provider={user.provider} />
-              <span className="text-mist/60 text-xs">Joined {formatDate(user.createdAt)}</span>
+              <span className="text-on-surface-variant/50 text-xs">Joined {formatDate(user.createdAt)}</span>
             </div>
           </div>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-base">close</span>
+          </button>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-4 space-y-2">
-          <p className="text-mist text-xs font-semibold uppercase tracking-wider">Activity</p>
+        <div className="bg-surface-container-high rounded-xl p-4 space-y-2">
+          <p className="font-label text-on-surface-variant text-[10px]">ACTIVITY</p>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-mist/60 text-xs">Last active</p>
-              <p className="text-cream">{formatDate(user.lastActive)}</p>
+              <p className="text-on-surface-variant/60 text-xs">Last active</p>
+              <p className="text-on-surface">{formatDate(user.lastActive)}</p>
             </div>
             <div>
-              <p className="text-mist/60 text-xs">Exams completed</p>
-              <p className="text-cream">{user.examsCompleted}</p>
+              <p className="text-on-surface-variant/60 text-xs">Exams completed</p>
+              <p className="text-on-surface tabular">{user.examsCompleted}</p>
             </div>
           </div>
         </div>
 
         {user.certsStudied.length > 0 && (
           <div>
-            <p className="text-mist text-xs font-semibold uppercase tracking-wider mb-2">Certifications Studied</p>
+            <p className="font-label text-on-surface-variant text-[10px] mb-2">CERTIFICATIONS STUDIED</p>
             <div className="flex flex-wrap gap-2">
               {user.certsStudied.map(c => (
-                <span key={c} className="px-2 py-1 rounded-lg bg-gold/10 text-gold text-xs font-medium">{c.toUpperCase()}</span>
+                <span key={c} className="px-2 py-0.5 rounded-lg bg-primary/15 text-primary text-xs font-semibold">{c.toUpperCase()}</span>
               ))}
             </div>
           </div>
         )}
 
         {user.lastExamCert && (
-          <p className="text-sm text-mist">
-            Last exam: <span className="text-cream">{user.lastExamCert.toUpperCase()}</span>
+          <p className="text-sm text-on-surface-variant">
+            Last exam: <span className="text-on-surface font-medium">{user.lastExamCert.toUpperCase()}</span>
             {user.lastExamScore !== null && (
-              <> &middot; <span className={user.lastExamScore >= 70 ? 'text-green-400' : 'text-red-400'}>{user.lastExamScore}% {user.lastExamScore >= 70 ? 'PASS' : 'FAIL'}</span></>
+              <> &middot; <span className={user.lastExamScore >= 70 ? 'text-primary' : 'text-error'}>{user.lastExamScore}% {user.lastExamScore >= 70 ? 'PASS' : 'FAIL'}</span></>
             )}
           </p>
         )}
 
         {confirming ? (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 space-y-3">
-            <p className="text-red-400 text-sm">Delete {user.name}&apos;s account? This cannot be undone.</p>
+          <div className="bg-error-container/20 border border-error/30 rounded-xl p-3 space-y-3">
+            <p className="text-error text-sm">Delete {user.name}&apos;s account? This cannot be undone.</p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirming(false)} className="flex-1 py-2 rounded-lg border border-white/20 text-mist text-sm hover:text-cream transition-colors">Cancel</button>
-              <button onClick={() => onDelete(user.email)} className="flex-1 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Yes, Delete</button>
+              <button onClick={() => setConfirming(false)} className="flex-1 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:text-on-surface transition-colors">Cancel</button>
+              <button onClick={() => onDelete(user.email)} className="flex-1 py-2 rounded-lg bg-error-container text-on-error text-sm font-semibold hover:opacity-90 transition-opacity">Delete</button>
             </div>
           </div>
         ) : (
           <div className="flex gap-2">
-            <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-white/20 text-mist hover:text-cream transition-colors text-sm">Close</button>
-            <button onClick={() => setConfirming(true)} className="px-4 py-2 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors text-sm">Delete Account</button>
+            <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-outline-variant text-on-surface-variant hover:text-on-surface transition-colors text-sm">Close</button>
+            <button onClick={() => setConfirming(true)} className="px-4 py-2 rounded-xl border border-error/40 text-error hover:bg-error/10 transition-colors text-sm">Delete account</button>
           </div>
         )}
       </div>
@@ -216,12 +229,12 @@ export default function AdminPage() {
   })
 
   const scoreBuckets = [
-    { label: '0-50%', min: 0, max: 50 },
-    { label: '51-60%', min: 51, max: 60 },
-    { label: '61-70%', min: 61, max: 70 },
-    { label: '71-80%', min: 71, max: 80 },
-    { label: '81-90%', min: 81, max: 90 },
-    { label: '91-100%', min: 91, max: 100 },
+    { label: '0–50%', min: 0, max: 50 },
+    { label: '51–60%', min: 51, max: 60 },
+    { label: '61–70%', min: 61, max: 70 },
+    { label: '71–80%', min: 71, max: 80 },
+    { label: '81–90%', min: 81, max: 90 },
+    { label: '91–100%', min: 91, max: 100 },
   ]
   const scoreDistData = scoreBuckets.map(b => ({
     label: b.label,
@@ -237,272 +250,320 @@ export default function AdminPage() {
     .sort((a, b) => b.count - a.count)
 
   const TABS = [
-    { id: 'overview', label: 'Overview', icon: '🏠' },
-    { id: 'users', label: 'Users', icon: '👥' },
-    { id: 'activity', label: 'Activity', icon: '📊' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'overview', label: 'Overview', icon: 'home' },
+    { id: 'users', label: 'Users', icon: 'group' },
+    { id: 'activity', label: 'Activity', icon: 'analytics' },
+    { id: 'settings', label: 'Settings', icon: 'settings' },
   ] as const
 
+  const tooltipStyle = {
+    background: 'var(--surface-container)',
+    border: '1px solid var(--outline-variant)',
+    borderRadius: '8px',
+  }
+
   return (
-    <div className="min-h-screen bg-navy flex">
-      {/* Sidebar */}
-      <aside className="w-48 bg-ink border-r border-white/10 flex-shrink-0 flex flex-col">
-        <div className="p-4 border-b border-white/10">
-          <button onClick={() => navigate('/dashboard')} className="text-gold font-serif text-lg">CertPath AI</button>
-          <p className="text-mist/60 text-xs mt-0.5">Admin Dashboard</p>
-        </div>
-        <nav className="p-3 space-y-1 flex-1">
-          {TABS.map(t => (
+    <div className="min-h-dvh bg-background">
+      <TopNav />
+
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className="w-52 bg-surface-container border-r border-outline-variant flex-shrink-0 flex flex-col h-[calc(100vh-56px)] sticky top-14">
+          <div className="p-4 border-b border-outline-variant">
+            <span className="font-label text-primary text-[10px] uppercase tracking-widest">Admin</span>
+            <p className="text-on-surface font-serif font-semibold mt-0.5">Platform Management</p>
+          </div>
+          <nav className="p-2 space-y-0.5 flex-1">
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2.5 ${
+                  tab === t.id
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base"
+                  style={tab === t.id ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                  {t.icon}
+                </span>
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <div className="p-2 border-t border-outline-variant">
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 ${
-                tab === t.id ? 'bg-gold text-navy' : 'text-mist hover:text-cream hover:bg-white/5'
-              }`}
+              onClick={() => navigate('/dashboard')}
+              className="w-full flex items-center gap-2 px-3 py-2 text-on-surface-variant/60 text-xs hover:text-on-surface-variant transition-colors rounded-lg hover:bg-surface-container-high"
             >
-              <span>{t.icon}</span>
-              {t.label}
+              <span className="material-symbols-outlined text-sm">arrow_back</span>
+              Back to app
             </button>
-          ))}
-        </nav>
-        <div className="p-3 border-t border-white/10">
-          <button onClick={() => navigate('/dashboard')} className="w-full text-left px-3 py-2 text-mist/60 text-xs hover:text-mist transition-colors">
-            Back to App
-          </button>
-        </div>
-      </aside>
+          </div>
+        </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-mist text-sm animate-pulse">Loading admin data…</div>
-            </div>
-          ) : (
-            <>
-              {/* OVERVIEW */}
-              {tab === 'overview' && stats && (
-                <div className="space-y-6">
-                  <h1 className="text-cream font-serif text-2xl">Overview</h1>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard label="Total Users" value={stats.users.total} />
-                    <StatCard label="New This Week" value={stats.users.newThisWeek} />
-                    <StatCard label="Exams Taken" value={stats.activity.totalExams} />
-                    <StatCard label="Avg Score" value={`${stats.activity.avgScore}%`} />
-                  </div>
+        {/* Main */}
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-5xl mx-auto px-6 py-8">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-3">
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-on-surface-variant text-sm">Loading admin data…</p>
+              </div>
+            ) : (
+              <>
+                {/* OVERVIEW */}
+                {tab === 'overview' && stats && (
+                  <div className="space-y-6">
+                    <div>
+                      <span className="font-label text-primary text-[10px] uppercase tracking-widest">Overview</span>
+                      <h1 className="font-serif text-h1 text-on-surface mt-1">Platform dashboard</h1>
+                    </div>
 
-                  <div className="bg-ink border border-white/10 rounded-2xl p-5">
-                    <h2 className="text-cream font-semibold mb-4">Sign-up Providers</h2>
-                    {[
-                      { label: 'Google', count: stats.users.byProvider.google, color: '#4285F4' },
-                      { label: 'GitHub', count: stats.users.byProvider.github, color: '#8B949E' },
-                      { label: 'Email', count: stats.users.byProvider.email, color: '#C9A84C' },
-                    ].map(p => (
-                      <div key={p.label} className="flex items-center gap-3 mb-3">
-                        <span className="text-mist text-sm w-14">{p.label}</span>
-                        <div className="flex-1 bg-white/5 rounded-full h-2">
-                          <div
-                            className="h-2 rounded-full transition-all"
-                            style={{ width: `${stats.users.total ? (p.count / stats.users.total) * 100 : 0}%`, backgroundColor: p.color }}
-                          />
-                        </div>
-                        <span className="text-mist/60 text-xs w-20 text-right">
-                          {p.count} ({stats.users.total ? Math.round((p.count / stats.users.total) * 100) : 0}%)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <StatCard label="TOTAL USERS" value={stats.users.total} icon="group" />
+                      <StatCard label="NEW THIS WEEK" value={stats.users.newThisWeek} icon="person_add" color="text-secondary" />
+                      <StatCard label="EXAMS TAKEN" value={stats.activity.totalExams} icon="edit_note" color="text-tertiary" />
+                      <StatCard label="AVG SCORE" value={`${stats.activity.avgScore}%`} icon="analytics" />
+                    </div>
 
-                  <div className="bg-ink border border-white/10 rounded-2xl p-5">
-                    <h2 className="text-cream font-semibold mb-4">Active Users — Last 7 Days</h2>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <LineChart data={activityChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="day" tick={{ fill: '#8B9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: '#8B9AB0', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <Tooltip contentStyle={{ background: '#0D1B2A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} labelStyle={{ color: '#E8E8D0' }} itemStyle={{ color: '#C9A84C' }} />
-                        <Line type="monotone" dataKey="users" stroke="#C9A84C" strokeWidth={2} dot={{ fill: '#C9A84C', r: 3 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {certChartData.length > 0 && (
-                    <div className="bg-ink border border-white/10 rounded-2xl p-5">
-                      <h2 className="text-cream font-semibold mb-4">Most Popular Certifications</h2>
-                      {certChartData.map(c => (
-                        <div key={c.cert} className="flex items-center gap-3 mb-3">
-                          <span className="text-mist text-sm w-20">{c.cert}</span>
-                          <div className="flex-1 bg-white/5 rounded-full h-2">
+                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
+                      <h2 className="font-serif font-semibold text-on-surface mb-4">Sign-up providers</h2>
+                      {[
+                        { label: 'Google', count: stats.users.byProvider.google, color: '#4285F4' },
+                        { label: 'GitHub', count: stats.users.byProvider.github, color: '#8B949E' },
+                        { label: 'Email', count: stats.users.byProvider.email, color: '#f2ca50' },
+                      ].map(p => (
+                        <div key={p.label} className="flex items-center gap-3 mb-3">
+                          <span className="text-on-surface-variant text-sm w-14">{p.label}</span>
+                          <div className="flex-1 bg-surface-container-highest rounded-full h-1.5">
                             <div
-                              className="h-2 rounded-full bg-gold"
-                              style={{ width: `${certChartData[0].count ? (c.count / certChartData[0].count) * 100 : 0}%` }}
+                              className="h-1.5 rounded-full transition-all"
+                              style={{ width: `${stats.users.total ? (p.count / stats.users.total) * 100 : 0}%`, backgroundColor: p.color }}
                             />
                           </div>
-                          <span className="text-mist/60 text-xs w-16 text-right">{c.count} users</span>
+                          <span className="text-on-surface-variant/60 text-xs w-24 text-right tabular">
+                            {p.count} ({stats.users.total ? Math.round((p.count / stats.users.total) * 100) : 0}%)
+                          </span>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* USERS */}
-              {tab === 'users' && stats && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h1 className="text-cream font-serif text-2xl">Users ({stats.users.total})</h1>
-                    <input
-                      type="text"
-                      placeholder="Search by name or email…"
-                      value={search}
-                      onChange={e => { setSearch(e.target.value); setPage(0) }}
-                      className="bg-ink border border-white/20 rounded-xl px-4 py-2 text-cream text-sm placeholder-mist/40 w-64 focus:outline-none focus:border-gold/60"
-                    />
-                  </div>
-
-                  <div className="bg-ink border border-white/10 rounded-2xl overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-white/10">
-                          {['Name', 'Email', 'Via', 'Joined', 'Last Active', 'Exams', 'Score', ''].map(h => (
-                            <th key={h} className="text-left px-4 py-3 text-mist/60 text-xs font-semibold">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pageUsers.map(u => (
-                          <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                            <td className="px-4 py-3 text-cream font-medium">{u.name}</td>
-                            <td className="px-4 py-3 text-mist text-xs">{u.email}</td>
-                            <td className="px-4 py-3"><ProviderBadge provider={u.provider} /></td>
-                            <td className="px-4 py-3 text-mist text-xs">{formatDate(u.createdAt)}</td>
-                            <td className="px-4 py-3 text-mist text-xs">{formatDate(u.lastActive)}</td>
-                            <td className="px-4 py-3 text-cream">{u.examsCompleted}</td>
-                            <td className="px-4 py-3">
-                              {u.lastExamScore !== null
-                                ? <span className={u.lastExamScore >= 70 ? 'text-green-400' : 'text-red-400'}>{u.lastExamScore}%</span>
-                                : <span className="text-mist/40">—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <button onClick={() => setSelectedUser(u)} className="text-gold/80 hover:text-gold text-xs transition-colors">View</button>
-                            </td>
-                          </tr>
-                        ))}
-                        {pageUsers.length === 0 && (
-                          <tr><td colSpan={8} className="px-4 py-8 text-center text-mist/40 text-sm">No users found</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2">
-                      <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg border border-white/20 text-mist text-sm disabled:opacity-30 hover:text-cream transition-colors">←</button>
-                      <span className="text-mist text-sm">{page + 1} / {totalPages}</span>
-                      <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg border border-white/20 text-mist text-sm disabled:opacity-30 hover:text-cream transition-colors">→</button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ACTIVITY */}
-              {tab === 'activity' && stats && (
-                <div className="space-y-6">
-                  <h1 className="text-cream font-serif text-2xl">Activity</h1>
-
-                  <div className="bg-ink border border-white/10 rounded-2xl p-5">
-                    <h2 className="text-cream font-semibold mb-4">Certification Popularity</h2>
-                    {certChartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={certChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                          <XAxis dataKey="cert" tick={{ fill: '#8B9AB0', fontSize: 11 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill: '#8B9AB0', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                          <Tooltip contentStyle={{ background: '#0D1B2A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} labelStyle={{ color: '#E8E8D0' }} itemStyle={{ color: '#C9A84C' }} />
-                          <Bar dataKey="count" fill="#C9A84C" radius={[4, 4, 0, 0]} />
-                        </BarChart>
+                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
+                      <h2 className="font-serif font-semibold text-on-surface mb-4">Active users — last 7 days</h2>
+                      <ResponsiveContainer width="100%" height={160}>
+                        <LineChart data={activityChartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.4} />
+                          <XAxis dataKey="day" tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--on-surface)' }} itemStyle={{ color: 'var(--primary)' }} />
+                          <Line type="monotone" dataKey="users" stroke="var(--primary)" strokeWidth={2} dot={{ fill: 'var(--primary)', r: 3 }} />
+                        </LineChart>
                       </ResponsiveContainer>
-                    ) : (
-                      <p className="text-mist/40 text-sm text-center py-8">No exam data yet</p>
+                    </div>
+
+                    {certChartData.length > 0 && (
+                      <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
+                        <h2 className="font-serif font-semibold text-on-surface mb-4">Most popular certifications</h2>
+                        {certChartData.map(c => (
+                          <div key={c.cert} className="flex items-center gap-3 mb-3">
+                            <span className="text-on-surface-variant text-sm w-20 font-medium">{c.cert}</span>
+                            <div className="flex-1 bg-surface-container-highest rounded-full h-1.5">
+                              <div
+                                className="h-1.5 rounded-full bg-primary transition-all"
+                                style={{ width: `${certChartData[0].count ? (c.count / certChartData[0].count) * 100 : 0}%` }}
+                              />
+                            </div>
+                            <span className="text-on-surface-variant/60 text-xs w-16 text-right tabular">{c.count} users</span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
+                )}
 
-                  <div className="bg-ink border border-white/10 rounded-2xl p-5">
-                    <h2 className="text-cream font-semibold mb-4">Score Distribution</h2>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={scoreDistData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="label" tick={{ fill: '#8B9AB0', fontSize: 10 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: '#8B9AB0', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <Tooltip contentStyle={{ background: '#0D1B2A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} labelStyle={{ color: '#E8E8D0' }} itemStyle={{ color: '#7BC67A' }} />
-                        <Bar dataKey="count" fill="#7BC67A" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <StatCard label="Active This Week" value={stats.activity.activeThisWeek} />
-                    <StatCard label="Total Exams Taken" value={stats.activity.totalExams} />
-                    <StatCard label="Platform Avg Score" value={`${stats.activity.avgScore}%`} />
-                  </div>
-                </div>
-              )}
-
-              {/* SETTINGS */}
-              {tab === 'settings' && (
-                <div className="space-y-6 max-w-lg">
-                  <h1 className="text-cream font-serif text-2xl">Platform Settings</h1>
-
-                  <div className="bg-ink border border-white/10 rounded-2xl p-5 space-y-5">
-                    <div className="flex items-center justify-between">
+                {/* USERS */}
+                {tab === 'users' && stats && (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-cream text-sm font-medium">Maintenance Mode</p>
-                        <p className="text-mist/60 text-xs mt-0.5">Blocks all non-admin users with a maintenance page</p>
+                        <span className="font-label text-primary text-[10px] uppercase tracking-widest">Users</span>
+                        <h1 className="font-serif text-h2 text-on-surface mt-0.5">{stats.users.total} registered users</h1>
                       </div>
+                      <div className="relative">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
+                        <input
+                          type="text"
+                          placeholder="Search by name or email…"
+                          value={search}
+                          onChange={e => { setSearch(e.target.value); setPage(0) }}
+                          className="bg-surface-container border border-outline-variant rounded-xl pl-10 pr-4 py-2 text-on-surface text-sm placeholder-on-surface-variant/40 w-64 focus:outline-none focus:border-primary/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-outline-variant">
+                            {['Name / Email', 'Via', 'Joined', 'Last active', 'Exams', 'Score', ''].map(h => (
+                              <th key={h} className="text-left px-4 py-3 font-label text-on-surface-variant text-[10px] uppercase tracking-wider">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pageUsers.map(u => (
+                            <tr key={u.id} className="border-b border-outline-variant/50 hover:bg-surface-container-high transition-colors">
+                              <td className="px-4 py-3">
+                                <p className="text-on-surface font-medium text-sm">{u.name}</p>
+                                <p className="text-on-surface-variant/60 text-xs">{u.email}</p>
+                              </td>
+                              <td className="px-4 py-3"><ProviderBadge provider={u.provider} /></td>
+                              <td className="px-4 py-3 text-on-surface-variant text-xs">{formatDate(u.createdAt)}</td>
+                              <td className="px-4 py-3 text-on-surface-variant text-xs">{formatDate(u.lastActive)}</td>
+                              <td className="px-4 py-3 text-on-surface tabular text-sm">{u.examsCompleted}</td>
+                              <td className="px-4 py-3">
+                                {u.lastExamScore !== null
+                                  ? <span className={`font-semibold tabular text-sm ${u.lastExamScore >= 70 ? 'text-primary' : 'text-error'}`}>{u.lastExamScore}%</span>
+                                  : <span className="text-on-surface-variant/30">—</span>
+                                }
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => setSelectedUser(u)}
+                                  className="text-primary/70 hover:text-primary text-xs transition-colors font-medium"
+                                >
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {pageUsers.length === 0 && (
+                            <tr><td colSpan={7} className="px-4 py-10 text-center text-on-surface-variant/40 text-sm">No users found</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2">
+                        <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm disabled:opacity-30 hover:text-on-surface transition-colors">
+                          <span className="material-symbols-outlined text-base">chevron_left</span>
+                        </button>
+                        <span className="text-on-surface-variant text-sm tabular">{page + 1} / {totalPages}</span>
+                        <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm disabled:opacity-30 hover:text-on-surface transition-colors">
+                          <span className="material-symbols-outlined text-base">chevron_right</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ACTIVITY */}
+                {tab === 'activity' && stats && (
+                  <div className="space-y-6">
+                    <div>
+                      <span className="font-label text-primary text-[10px] uppercase tracking-widest">Activity</span>
+                      <h1 className="font-serif text-h2 text-on-surface mt-0.5">Exam analytics</h1>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <StatCard label="ACTIVE THIS WEEK" value={stats.activity.activeThisWeek} icon="trending_up" />
+                      <StatCard label="TOTAL EXAMS" value={stats.activity.totalExams} icon="edit_note" />
+                      <StatCard label="AVG SCORE" value={`${stats.activity.avgScore}%`} icon="analytics" />
+                    </div>
+
+                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
+                      <h2 className="font-serif font-semibold text-on-surface mb-4">Certification popularity</h2>
+                      {certChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={certChartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.4} />
+                            <XAxis dataKey="cert" tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                            <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--on-surface)' }} itemStyle={{ color: 'var(--primary)' }} />
+                            <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <p className="text-on-surface-variant/40 text-sm text-center py-8">No exam data yet</p>
+                      )}
+                    </div>
+
+                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
+                      <h2 className="font-serif font-semibold text-on-surface mb-4">Score distribution</h2>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={scoreDistData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.4} />
+                          <XAxis dataKey="label" tick={{ fill: 'var(--on-surface-variant)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--on-surface)' }} itemStyle={{ color: 'var(--secondary)' }} />
+                          <Bar dataKey="count" fill="var(--secondary)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* SETTINGS */}
+                {tab === 'settings' && (
+                  <div className="space-y-6 max-w-lg">
+                    <div>
+                      <span className="font-label text-primary text-[10px] uppercase tracking-widest">Settings</span>
+                      <h1 className="font-serif text-h2 text-on-surface mt-0.5">Platform settings</h1>
+                    </div>
+
+                    <div className="bg-surface-container border border-outline-variant rounded-xl p-5 space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-on-surface text-sm font-medium">Maintenance mode</p>
+                          <p className="text-on-surface-variant/60 text-xs mt-0.5">Blocks all non-admin users</p>
+                        </div>
+                        <button
+                          onClick={() => setSettings(s => ({ ...s, maintenance: !s.maintenance }))}
+                          className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${settings.maintenance ? 'bg-primary' : 'bg-surface-container-highest'}`}
+                        >
+                          <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${settings.maintenance ? 'right-1' : 'left-1'}`} />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-on-surface text-sm font-medium block mb-1.5">Announcement banner</label>
+                        <input
+                          type="text"
+                          value={settings.banner}
+                          onChange={e => setSettings(s => ({ ...s, banner: e.target.value }))}
+                          placeholder="Leave blank to hide banner"
+                          className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface text-sm placeholder-on-surface-variant/40 focus:outline-none focus:border-primary/50"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-on-surface text-sm font-medium block mb-1.5">Featured certification</label>
+                        <input
+                          type="text"
+                          value={settings.featuredCert}
+                          onChange={e => setSettings(s => ({ ...s, featuredCert: e.target.value }))}
+                          placeholder="e.g. ccxp"
+                          className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface text-sm placeholder-on-surface-variant/40 focus:outline-none focus:border-primary/50"
+                        />
+                      </div>
+
                       <button
-                        onClick={() => setSettings(s => ({ ...s, maintenance: !s.maintenance }))}
-                        className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${settings.maintenance ? 'bg-gold' : 'bg-white/10'}`}
+                        onClick={saveSettings}
+                        className="w-full bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:brightness-110 transition-all text-sm shadow-primary-btn"
                       >
-                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.maintenance ? 'right-1' : 'left-1'}`} />
+                        {settingsSaved ? 'Saved' : 'Save settings'}
                       </button>
                     </div>
-
-                    <div>
-                      <label className="text-cream text-sm font-medium block mb-1.5">Announcement Banner</label>
-                      <input
-                        type="text"
-                        value={settings.banner}
-                        onChange={e => setSettings(s => ({ ...s, banner: e.target.value }))}
-                        placeholder="Leave blank to hide banner"
-                        className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-2.5 text-cream text-sm placeholder-mist/40 focus:outline-none focus:border-gold/60"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-cream text-sm font-medium block mb-1.5">Featured Certification</label>
-                      <input
-                        type="text"
-                        value={settings.featuredCert}
-                        onChange={e => setSettings(s => ({ ...s, featuredCert: e.target.value }))}
-                        placeholder="e.g. ccxp"
-                        className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-2.5 text-cream text-sm placeholder-mist/40 focus:outline-none focus:border-gold/60"
-                      />
-                    </div>
-
-                    <button
-                      onClick={saveSettings}
-                      className="w-full bg-gold text-navy font-bold py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm"
-                    >
-                      {settingsSaved ? '✓ Saved!' : 'Save Settings'}
-                    </button>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
+                )}
+              </>
+            )}
+          </div>
+        </main>
+      </div>
 
       {selectedUser && (
         <UserModal user={selectedUser} onClose={() => setSelectedUser(null)} onDelete={deleteUser} />

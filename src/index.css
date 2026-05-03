@@ -2,6 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Light mode (default) ─────────────────────────── */
+:root {
+  --surface: #faf8f4;
+  --surface-container: #f3efe8;
+  --surface-container-low: #f7f4ee;
+  --surface-container-high: #ebe6dc;
+  --surface-container-highest: #dedad0;
+  --on-surface: #1c1a14;
+  --on-surface-variant: #4a4535;
+  --outline: #7a7260;
+  --outline-variant: #ccc5b0;
+  --primary: #735c00;
+  --on-primary: #ffffff;
+  --background: #faf8f4;
+  --on-background: #1c1a14;
+  --error: #ba1a1a;
+  --secondary: #3958b9;
+}
+
+/* ── Dark mode ────────────────────────────────────── */
+.dark {
+  --surface: #16130b;
+  --surface-container: #231f17;
+  --surface-container-low: #1f1b13;
+  --surface-container-high: #2d2a21;
+  --surface-container-highest: #38342b;
+  --on-surface: #eae1d4;
+  --on-surface-variant: #d0c5af;
+  --outline: #99907c;
+  --outline-variant: #4d4635;
+  --primary: #f2ca50;
+  --on-primary: #3c2f00;
+  --background: #16130b;
+  --on-background: #eae1d4;
+  --error: #ffb4ab;
+  --secondary: #b4c5ff;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -9,22 +47,51 @@
 
   body {
     margin: 0;
-    font-family: 'DM Sans', sans-serif;
-    background-color: #0D1B2A;
-    color: #F7F3EC;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background);
+    color: var(--on-surface);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   * {
     box-sizing: border-box;
   }
 
-  /* Tabular figures for numbers */
-  .tabular { font-variant-numeric: tabular-nums; }
+  h1, h2, h3 {
+    text-wrap: balance;
+    font-family: 'Noto Serif', serif;
+  }
+}
 
-  /* Text balance for headings */
-  h1, h2, h3 { text-wrap: balance; }
+/* ── Material Symbols ─────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* ── AcademiaAI components ────────────────────────── */
+.lesson-active {
+  box-shadow: 0 0 15px rgba(242, 202, 80, 0.15);
+}
+
+.ai-insight-glow {
+  border: 1px solid rgba(242, 202, 80, 0.2);
+  background: rgba(35, 31, 23, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.dark .ai-insight-glow {
+  background: rgba(35, 31, 23, 0.6);
+}
+
+:root:not(.dark) .ai-insight-glow {
+  background: rgba(243, 239, 232, 0.85);
+  border-color: rgba(115, 92, 0, 0.2);
 }
 
 /* ── Noise overlay ────────────────────────────────── */
@@ -37,13 +104,11 @@ body::before {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 200px 200px;
-  opacity: 0.35;
+  opacity: 0.25;
 }
 
 /* ── Flip card ────────────────────────────────────── */
-.flip-card {
-  perspective: 1000px;
-}
+.flip-card { perspective: 1000px; }
 
 .flip-card-inner {
   transition: transform 0.6s;
@@ -51,9 +116,7 @@ body::before {
   position: relative;
 }
 
-.flip-card-inner.flipped {
-  transform: rotateY(180deg);
-}
+.flip-card-inner.flipped { transform: rotateY(180deg); }
 
 .flip-card-front,
 .flip-card-back {
@@ -64,41 +127,18 @@ body::before {
 .flip-card-back {
   transform: rotateY(180deg);
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
 }
 
-/* ── Spotlight card border effect ────────────────── */
-.card-spotlight {
-  position: relative;
-  overflow: hidden;
-}
-
-.card-spotlight::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(600px circle at var(--x, 50%) var(--y, 50%), rgba(201,168,76,0.06), transparent 40%);
-  pointer-events: none;
-  transition: opacity 0.3s;
-  opacity: 0;
-}
-
-.card-spotlight:hover::before {
-  opacity: 1;
-}
-
-/* ── Button press feedback ────────────────────────── */
+/* ── Button press ─────────────────────────────────── */
 button:active:not(:disabled) {
   transform: translateY(1px) scale(0.99);
 }
 
 /* ── Focus rings ──────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid #C9A84C;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -106,5 +146,8 @@ button:active:not(:disabled) {
 /* ── Scrollbar ────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(141,164,184,0.2); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(141,164,184,0.35); }
+::-webkit-scrollbar-thumb { background: rgba(153,144,124,0.25); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(153,144,124,0.45); }
+
+/* ── Tabular nums ─────────────────────────────────── */
+.tabular { font-variant-numeric: tabular-nums; }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import { useHistoryStore } from './store/historyStore'
 import { useLearnStore } from './store/learnStore'
+import { useTutorStore } from './store/tutorStore'
+import { useTheme } from './hooks/useTheme'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import AdminRoute from './components/Admin/AdminRoute'
 import LoginPage from './pages/LoginPage'
@@ -16,7 +18,7 @@ import ComingSoonPage from './pages/ComingSoonPage'
 import AdminPage from './pages/AdminPage'
 import MaintenancePage from './pages/MaintenancePage'
 import TutorChat from './components/AI/TutorChat'
-import { getCert } from './data/certifications'
+import { getCert, AVAILABLE_CERTS } from './data/certifications'
 
 function OfflineBanner() {
   const [offline, setOffline] = useState(!navigator.onLine)
@@ -39,8 +41,8 @@ function RootRedirect() {
   const user = useAuthStore(s => s.user)
   const isLoading = useAuthStore(s => s.isLoading)
   if (isLoading) return (
-    <div className="min-h-screen bg-navy flex items-center justify-center">
-      <div className="text-gold text-lg animate-pulse">Loading…</div>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-primary text-lg animate-pulse font-serif">Loading…</div>
     </div>
   )
   if (user) return <Navigate to="/dashboard" replace />
@@ -89,7 +91,7 @@ interface HealthData {
 function AnnouncementBanner({ banner, onDismiss }: { banner: string | null; onDismiss: () => void }) {
   if (!banner) return null
   return (
-    <div className="bg-gold text-navy text-xs text-center py-2 px-4 font-medium flex items-center justify-center gap-2">
+    <div className="bg-primary text-on-primary text-xs text-center py-2 px-4 font-medium flex items-center justify-center gap-2 z-[200] relative">
       <span>{banner}</span>
       <button onClick={onDismiss} className="opacity-60 hover:opacity-100 ml-1">✕</button>
     </div>
@@ -101,6 +103,60 @@ function MaintenanceGate({ children, maintenance }: { children: React.ReactNode;
   const isLoading = useAuthStore(s => s.isLoading)
   if (maintenance && !isLoading && !user?.isAdmin) return <MaintenancePage />
   return <>{children}</>
+}
+
+function MobileBottomNav() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { setOpen } = useTutorStore()
+
+  // Find certId from current path
+  const segs = location.pathname.split('/').filter(Boolean)
+  const certId = AVAILABLE_CERTS.find(c => segs.includes(c.id))?.id
+
+  if (!certId) return null
+
+  const tabs = [
+    { label: 'Study', icon: 'menu_book', path: `/${certId}/learn` },
+    { label: 'Exam', icon: 'edit_note', path: `/${certId}/exam` },
+    { label: 'Tutor', icon: 'smart_toy', action: 'tutor' },
+    { label: 'History', icon: 'history', path: `/${certId}/history` },
+    { label: 'Certs', icon: 'verified', path: '/dashboard' },
+  ]
+
+  return (
+    <nav className="fixed bottom-0 w-full bg-surface-container/95 backdrop-blur-lg border-t border-outline-variant z-40 md:hidden">
+      <div className="flex justify-around items-center h-16 px-2">
+        {tabs.map(tab => {
+          const isActive = tab.path ? location.pathname.startsWith(tab.path) : false
+          return (
+            <button
+              key={tab.label}
+              onClick={() => tab.action === 'tutor' ? setOpen(true) : navigate(tab.path!)}
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all ${
+                isActive
+                  ? 'text-primary'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+              >
+                {tab.icon}
+              </span>
+              <span className="text-[9px] font-semibold uppercase tracking-widest font-label">{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </nav>
+  )
+}
+
+function ThemeInitializer() {
+  useTheme()
+  return null
 }
 
 export default function App() {
@@ -127,10 +183,11 @@ export default function App() {
         else console.log(`[health] Groq connected (key: ${data.keyPrefix}…)`)
       })
       .catch(e => console.error('[health] check failed:', e))
-  }, []) // run once only — never re-run
+  }, [])
 
   return (
     <BrowserRouter basename="/certpath-ai">
+      <ThemeInitializer />
       <AnnouncementBanner
         banner={bannerDismissed ? null : (health?.banner ?? null)}
         onDismiss={() => setBannerDismissed(true)}
@@ -165,6 +222,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </MaintenanceGate>
+      <MobileBottomNav />
       <TutorChatWrapper />
     </BrowserRouter>
   )
