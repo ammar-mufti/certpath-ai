@@ -22,7 +22,7 @@ interface StoredUser {
   lastExamCert?: string | null
 }
 
-const ALLOWED_ORIGINS = ['https://ammar-mufti.github.io', 'http://localhost:5173']
+const ALLOWED_ORIGINS = ['https://ammar-mufti.github.io', 'http://localhost:5173', 'http://localhost:4173']
 const FRONTEND_URL = 'https://ammar-mufti.github.io/certpath-ai'
 const GOOGLE_REDIRECT_URI = 'https://ccxp-auth.muftiammar52.workers.dev/auth/google/callback'
 
@@ -208,7 +208,22 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(origin) })
     }
 
-    // ── GitHub OAuth ──────────────────────────────────────────────────────────
+    let parsedBody: Record<string, unknown> = {}
+    if (request.method === 'POST') {
+      try {
+        const text = await request.text()
+        if (text && text.trim()) {
+          parsedBody = JSON.parse(text) as Record<string, unknown>
+        }
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON body' }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } },
+        )
+      }
+    }
+
+    // â”€â”€ GitHub OAuth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/auth/github/login') {
       return Response.redirect(
@@ -261,7 +276,7 @@ export default {
       return Response.redirect(`${FRONTEND_URL}/login?token=${jwt}`, 302)
     }
 
-    // ── Google OAuth ──────────────────────────────────────────────────────────
+    // â”€â”€ Google OAuth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/auth/google/login') {
       const params = new URLSearchParams({
@@ -315,13 +330,10 @@ export default {
       return Response.redirect(`${FRONTEND_URL}/login?token=${jwt}`, 302)
     }
 
-    // ── Email auth ────────────────────────────────────────────────────────────
+    // â”€â”€ Email auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/auth/email/register' && request.method === 'POST') {
-      let body: { email?: string; password?: string; name?: string }
-      try { body = await request.json() } catch { return errorRes('Invalid JSON', 400, origin) }
-
-      const { email = '', password = '', name = '' } = body
+      const { email = '', password = '', name = '' } = parsedBody as { email?: string; password?: string; name?: string }
 
       if (!email.includes('@') || !email.includes('.')) return errorRes('Invalid email address', 400, origin)
       if (password.length < 8) return errorRes('Password must be at least 8 characters', 400, origin)
@@ -356,10 +368,7 @@ export default {
     }
 
     if (url.pathname === '/auth/email/login' && request.method === 'POST') {
-      let body: { email?: string; password?: string }
-      try { body = await request.json() } catch { return errorRes('Invalid JSON', 400, origin) }
-
-      const { email = '', password = '' } = body
+      const { email = '', password = '' } = parsedBody as { email?: string; password?: string }
       if (!email || !password) return errorRes('Email and password are required', 400, origin)
 
       const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
@@ -404,7 +413,7 @@ export default {
       return jsonRes({ token, user }, 200, origin)
     }
 
-    // ── Health check ──────────────────────────────────────────────────────────
+    // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/api/health' && request.method === 'GET') {
       const keyPrefix = env.GROQ_API_KEY?.substring(0, 8) ?? 'missing'
@@ -430,7 +439,7 @@ export default {
       }
     }
 
-    // ── Admin: GET /api/admin/stats ───────────────────────────────────────────
+    // â”€â”€ Admin: GET /api/admin/stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
       try {
@@ -496,17 +505,14 @@ export default {
       }, 200, origin)
     }
 
-    // ── Admin: POST /api/admin/track ──────────────────────────────────────────
+    // â”€â”€ Admin: POST /api/admin/track â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/api/admin/track' && request.method === 'POST') {
       const auth = request.headers.get('Authorization') ?? ''
       const payload = await verifyJwt(auth.replace('Bearer ', ''), env.JWT_SECRET)
       if (!payload) return errorRes('Unauthorized', 401, origin)
 
-      let body: { event?: string; certId?: string; score?: number; domain?: string }
-      try { body = await request.json() } catch { return errorRes('Invalid JSON', 400, origin) }
-
-      const { event, certId, score, domain } = body
+      const { event, certId, score, domain } = parsedBody as { event?: string; certId?: string; score?: number; domain?: string }
       const userKey = `user_${(payload.email as string).toLowerCase()}`
       const stored = await env.USER_KV.get(userKey)
 
@@ -535,7 +541,7 @@ export default {
       return jsonRes({ ok: true }, 200, origin)
     }
 
-    // ── Admin: DELETE /api/admin/users/:email ─────────────────────────────────
+    // â”€â”€ Admin: DELETE /api/admin/users/:email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname.startsWith('/api/admin/users/') && request.method === 'DELETE') {
       try {
@@ -550,7 +556,7 @@ export default {
       return jsonRes({ deleted: email }, 200, origin)
     }
 
-    // ── Admin: GET/POST /api/admin/settings ───────────────────────────────────
+    // â”€â”€ Admin: GET/POST /api/admin/settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/api/admin/settings') {
       try {
@@ -570,12 +576,11 @@ export default {
       }
 
       if (request.method === 'POST') {
-        let body: { maintenance?: boolean; featuredCert?: string; banner?: string }
-        try { body = await request.json() } catch { return errorRes('Invalid JSON', 400, origin) }
+        const { maintenance, featuredCert, banner } = parsedBody as { maintenance?: boolean; featuredCert?: string; banner?: string }
         await Promise.all([
-          env.USER_KV.put('settings_maintenance', body.maintenance ? 'true' : 'false'),
-          env.USER_KV.put('settings_featured_cert', body.featuredCert ?? ''),
-          env.USER_KV.put('settings_banner', body.banner ?? ''),
+          env.USER_KV.put('settings_maintenance', maintenance ? 'true' : 'false'),
+          env.USER_KV.put('settings_featured_cert', featuredCert ?? ''),
+          env.USER_KV.put('settings_banner', banner ?? ''),
         ])
         return jsonRes({ ok: true }, 200, origin)
       }
@@ -601,7 +606,7 @@ export default {
       }
     }
 
-    // ── LLM API (protected) ───────────────────────────────────────────────────
+    // â”€â”€ LLM API (protected) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     if (url.pathname === '/api/llm' && request.method === 'POST') {
       const authHeader = request.headers.get('Authorization') ?? ''
@@ -609,7 +614,7 @@ export default {
       const payload = await verifyJwt(token, env.JWT_SECRET)
       if (!payload) return errorRes('Unauthorized', 401, origin)
 
-      let body: {
+      const body = parsedBody as {
         type: string
         domain: string
         certId?: string
@@ -632,12 +637,6 @@ export default {
         userAnswer?: string
       }
 
-      try {
-        body = await request.json()
-      } catch {
-        return errorRes('Invalid JSON body', 400, origin)
-      }
-
       const certName = body.certName ?? 'CCXP'
       const certFullName = body.certFullName ?? 'Certified Customer Experience Professional'
       const certIssuer = body.certIssuer ?? 'CXPA'
@@ -645,16 +644,16 @@ export default {
       const difficulty = body.difficulty ?? 'Advanced'
       const examQuestions = body.examQuestions ?? 100
 
-      // ── STAGE 1: Domain snapshot ──────────────────────────────────────────
+      // â”€â”€ STAGE 1: Domain snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'stage1-summary') {
         const prompt = `You are a ${certName} exam coach. Give a concise exam-focused summary of the domain: "${body.domain}" for the ${certName} certification issued by ${certIssuer}.
 
 The candidate is sitting this exam soon. Focus on what the exam tests in this domain.
 
-Output ONLY this JSON object — no markdown, no explanation:
+Output ONLY this JSON object â€” no markdown, no explanation:
 {
   "tagline": "One sentence describing this domain purpose for ${certName}",
-  "examWeight": "X questions — X% of exam",
+  "examWeight": "X questions â€” X% of exam",
   "mustKnow": [
     "Specific fact 1 with framework or model name",
     "Specific fact 2",
@@ -668,7 +667,7 @@ Output ONLY this JSON object — no markdown, no explanation:
     "Specific mistake 3"
   ],
   "connectedDomains": [
-    "Domain name — one sentence why connected"
+    "Domain name â€” one sentence why connected"
   ]
 }`
 
@@ -682,7 +681,7 @@ Output ONLY this JSON object — no markdown, no explanation:
         }
       }
 
-      // ── STAGE 2: Key concepts ─────────────────────────────────────────────
+      // â”€â”€ STAGE 2: Key concepts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'stage2-concepts') {
         const topics = body.topics ?? []
         const half = Math.ceil(topics.length / 2)
@@ -693,7 +692,7 @@ Output ONLY this JSON object — no markdown, no explanation:
 Generate key concepts for domain: "${body.domain}".
 Topics: ${batch.join(', ')}
 
-Output ONLY a raw JSON array with exactly ${batch.length} objects — no markdown, no explanation:
+Output ONLY a raw JSON array with exactly ${batch.length} objects â€” no markdown, no explanation:
 [
   {
     "topic": "exact topic name from list",
@@ -727,18 +726,18 @@ Output ONLY a raw JSON array with exactly ${batch.length} objects — no markdow
         }
       }
 
-      // ── STAGE 3: Deep dive ────────────────────────────────────────────────
+      // â”€â”€ STAGE 3: Deep dive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'stage3-deepdive') {
         const prompt = `You are a ${certName} exam coach. Write a comprehensive deep dive on:
 Topic: "${body.topic}"
 Domain: "${body.domain}"
 Certification: ${certName} (${certFullName}) issued by ${certIssuer}
 
-Output ONLY this JSON object — no markdown, no explanation:
+Output ONLY this JSON object â€” no markdown, no explanation:
 {
   "overview": "3-4 sentence comprehensive explanation",
   "howItWorks": [
-    "Step 1 — specific and actionable",
+    "Step 1 â€” specific and actionable",
     "Step 2",
     "Step 3",
     "Step 4"
@@ -773,13 +772,13 @@ Output ONLY this JSON object — no markdown, no explanation:
         }
       }
 
-      // ── STAGE 4: Practice quiz ────────────────────────────────────────────
+      // â”€â”€ STAGE 4: Practice quiz â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'stage4-quiz') {
         const prompt = `Generate exactly 5 practice questions for ${certName} domain: "${body.domain}".
 Certification: ${certName} issued by ${certIssuer}. Pass mark: ${passingScore}%.
 Rules: educational explanations (2-3 sentences), all 4 options plausible, vary question types.
 
-Output ONLY a raw JSON array with exactly 5 objects — no markdown, no explanation:
+Output ONLY a raw JSON array with exactly 5 objects â€” no markdown, no explanation:
 [
   {
     "q": "Specific question text",
@@ -803,7 +802,7 @@ Output ONLY a raw JSON array with exactly 5 objects — no markdown, no explanat
         }
       }
 
-      // ── Tutor chat ────────────────────────────────────────────────────────
+      // â”€â”€ Tutor chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'tutor-chat') {
         const systemPrompt = body.systemPrompt ?? `You are an expert ${certName} exam coach helping a professional prepare for the ${certFullName} certification issued by ${certIssuer}. Pass mark: ${passingScore}%. Current context: ${body.pageContext ?? 'General study session'}. Style: concise and exam-focused, use bullet points and **bold** for key terms, give mnemonics when helpful, keep responses under 200 words unless detail is needed.`
 
@@ -859,7 +858,7 @@ Output ONLY a raw JSON array with exactly 5 objects — no markdown, no explanat
         return jsonRes({ response }, 200, origin)
       }
 
-      // ── Explain question ──────────────────────────────────────────────────
+      // â”€â”€ Explain question â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'explain-question') {
         const optLabels: Record<string, string> = { a: body.a ?? '', b: body.b ?? '', c: body.c ?? '', d: body.d ?? '' }
         const correctText = optLabels[body.correct ?? ''] ?? ''
@@ -877,7 +876,7 @@ ${wasCorrect ? 'CORRECT.' : 'WRONG.'}
 Explain in 3 parts:
 **WHY (${body.correct?.toUpperCase()}) is correct:** [1-2 sentences]
 **Why the others are wrong:** ${['a','b','c','d'].filter(o => o !== body.correct).map(o => `(${o.toUpperCase()}) one sentence`).join(', ')}
-**💡 Exam Tip:** [one memory tip]
+**ðŸ’¡ Exam Tip:** [one memory tip]
 
 Under 150 words. Bold key terms. Domain: ${body.domain}`
 
@@ -890,7 +889,7 @@ Under 150 words. Bold key terms. Domain: ${body.domain}`
         }
       }
 
-      // ── Generate questions (exam) ─────────────────────────────────────────
+      // â”€â”€ Generate questions (exam) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'generate-questions') {
         const prompt = body.extra && body.extra.length > 100
           ? body.extra
@@ -909,7 +908,7 @@ Output ONLY a raw JSON array:
         }
       }
 
-      // ── Study plan ────────────────────────────────────────────────────────
+      // â”€â”€ Study plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'study-plan') {
         const prompt = `${certName} study tips for weakest domains: ${body.domain}.
 Generate 3 tips per domain.
@@ -925,7 +924,7 @@ Output ONLY raw JSON array:
         }
       }
 
-      // ── Legacy generate-content ───────────────────────────────────────────
+      // â”€â”€ Legacy generate-content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'generate-content') {
         const extra = body.extra ?? ''
         const maxTok = extra === 'topics' ? 4000 : 2048
