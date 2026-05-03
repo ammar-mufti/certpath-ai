@@ -135,54 +135,11 @@ export const useExamStore = create<ExamState>((set, get) => ({
   },
 }))
 
-// Legacy CCXP weights — kept for backward compat, new code uses cert registry
-export const DOMAIN_WEIGHTS: Record<ExamMode, Record<string, number>> = {
-  full: {
-    'CX Strategy': 20,
-    'Customer-Centric Culture': 17,
-    'Voice of Customer': 20,
-    'Experience Design': 18,
-    'Metrics & Measurement': 15,
-    'Organizational Adoption': 10,
-  },
-  mini: {
-    'CX Strategy': 4,
-    'Customer-Centric Culture': 3,
-    'Voice of Customer': 4,
-    'Experience Design': 4,
-    'Metrics & Measurement': 3,
-    'Organizational Adoption': 2,
-  },
-  domain: {
-    'CX Strategy': 10,
-    'Customer-Centric Culture': 10,
-    'Voice of Customer': 10,
-    'Experience Design': 10,
-    'Metrics & Measurement': 10,
-    'Organizational Adoption': 10,
-  },
-}
-
 export const EXAM_DURATIONS: Record<ExamMode, number> = {
   full: 3 * 60 * 60,
   mini: 60 * 60,
   domain: 30 * 60,
 }
 
-export const DOMAINS = [
-  'CX Strategy',
-  'Customer-Centric Culture',
-  'Voice of Customer',
-  'Experience Design',
-  'Metrics & Measurement',
-  'Organizational Adoption',
-]
-
-export const DOMAIN_COLORS: Record<string, string> = {
-  'CX Strategy':              '#4A9EDB',
-  'Customer-Centric Culture': '#E8904A',
-  'Voice of Customer':        '#7BC67A',
-  'Experience Design':        '#C97AC9',
-  'Metrics & Measurement':    '#E8C94A',
-  'Organizational Adoption':  '#7AC9C9',
-}
+// Kept as empty stub — consumers updated to use getCert(certId)?.color directly
+export const DOMAIN_COLORS: Record<string, string> = {}

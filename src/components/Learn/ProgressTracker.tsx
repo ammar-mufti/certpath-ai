@@ -1,14 +1,17 @@
+import { useParams } from 'react-router-dom'
 import { useLearnStore } from '../../store/learnStore'
-import { DOMAIN_COLORS } from '../../store/examStore'
+import { getCert } from '../../data/certifications'
 
 interface Props { domain: string }
 
 export default function ProgressTracker({ domain }: Props) {
-  const { progress } = useLearnStore()
-  const p = progress[domain]
-  const color = DOMAIN_COLORS[domain] ?? '#C9A84C'
+  const { certId: certIdParam } = useParams<{ certId?: string }>()
+  const certId = certIdParam ?? 'ccxp'
+  const { getReadTopics, progress } = useLearnStore()
+  const p = progress[`${certId}::${domain}`]
+  const color = getCert(certId)?.color ?? '#C9A84C'
 
-  const topicsRead = p?.topicsRead.length ?? 0
+  const topicsRead = getReadTopics(certId, domain).length
   const flashcardsKnown = p?.flashcardsKnown.length ?? 0
   const quizScore = p?.quizScore
 

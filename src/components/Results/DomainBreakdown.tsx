@@ -1,5 +1,6 @@
+import { useParams } from 'react-router-dom'
 import type { Question } from '../../store/examStore'
-import { DOMAIN_COLORS } from '../../store/examStore'
+import { getCert } from '../../data/certifications'
 
 interface Props {
   questions: Question[]
@@ -7,6 +8,10 @@ interface Props {
 }
 
 export default function DomainBreakdown({ questions, answers }: Props) {
+  const { certId: certIdParam } = useParams<{ certId?: string }>()
+  const certId = certIdParam ?? 'ccxp'
+  const color = getCert(certId)?.color ?? '#C9A84C'
+
   const domains = [...new Set(questions.map(q => q.domain))]
 
   const stats = domains.map(domain => {
@@ -28,7 +33,7 @@ export default function DomainBreakdown({ questions, answers }: Props) {
             <div className="h-2 bg-ink rounded-full overflow-hidden">
               <div
                 className="h-2 rounded-full transition-all duration-700"
-                style={{ width: `${pct}%`, backgroundColor: DOMAIN_COLORS[domain] ?? '#C9A84C' }}
+                style={{ width: `${pct}%`, backgroundColor: color }}
               />
             </div>
           </div>

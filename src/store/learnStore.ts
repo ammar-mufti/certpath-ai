@@ -171,21 +171,3 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   },
 }))
 
-// Kept for backwards compatibility — components that imported this can switch to getCert()
-export const DOMAIN_TOPICS: Record<string, string[]> = {
-  'CX Strategy': ['CX Vision & Mission','Business Case for CX','CX Maturity Models','CX Governance & Ownership','CX Roadmap & Prioritization','Aligning CX to Corporate Strategy'],
-  'Customer-Centric Culture': ['Culture Change Management','Leadership Buy-in & Sponsorship','Employee Engagement in CX','CX Champions Network','Embedding CX Behaviors'],
-  'Voice of Customer': ['VoC Program Design','Listening Post Strategy','Quantitative vs Qualitative Research','Customer Journey Analytics','Insight Generation & Storytelling','Closing the Feedback Loop'],
-  'Experience Design': ['Customer Journey Mapping','Service Design Principles','Design Thinking Process','Moments of Truth','Prototyping & Testing','Innovation in CX'],
-  'Metrics & Measurement': ['NPS CSAT CES Explained','Linking CX to Business Outcomes','Building a CX Dashboard','Statistical Concepts for CX','ROI Calculation Methods'],
-  'Organizational Adoption': ['Change Management for CX','Cross-functional Alignment','CX Roles & Responsibilities','Governance Structures','Sustaining CX Momentum'],
-}
-
-export const DOMAIN_WEIGHTS_DISPLAY: Record<string, number> = {
-  'CX Strategy': 20,
-  'Customer-Centric Culture': 17,
-  'Voice of Customer': 20,
-  'Experience Design': 18,
-  'Metrics & Measurement': 15,
-  'Organizational Adoption': 10,
-}

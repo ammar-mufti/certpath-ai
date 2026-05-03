@@ -1,63 +1,96 @@
 import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { getCert } from '../../data/certifications'
+import type { CertDomain } from '../../data/certifications'
 
-interface Task { id: string; label: string; day: string }
-
-const TASKS: Task[] = [
-  { id: 'd1_strategy', day: 'Day 1 — Wednesday', label: 'CX Strategy — full study' },
-  { id: 'd1_voc', day: 'Day 1 — Wednesday', label: 'Voice of Customer — full study' },
-  { id: 'd1_drill', day: 'Day 1 — Wednesday', label: '20Q Mini Drill' },
-  { id: 'd1_review', day: 'Day 1 — Wednesday', label: 'Review wrong answers' },
-  { id: 'd2_design', day: 'Day 2 — Thursday', label: 'Experience Design — full study' },
-  { id: 'd2_metrics', day: 'Day 2 — Thursday', label: 'Metrics & Measurement — full study' },
-  { id: 'd2_culture', day: 'Day 2 — Thursday', label: 'Customer-Centric Culture — overview + flashcards' },
-  { id: 'd2_mock', day: 'Day 2 — Thursday', label: 'Full 100Q timed mock exam' },
-  { id: 'd2_review', day: 'Day 2 — Thursday', label: 'Review wrong answers' },
-  { id: 'd3_adoption', day: 'Day 3 — Friday', label: 'Organizational Adoption — full study' },
-  { id: 'd3_mock2', day: 'Day 3 — Friday', label: 'Second full 100Q timed exam' },
-  { id: 'd3_weak', day: 'Day 3 — Friday', label: 'Review weak domains' },
-  { id: 'd3_frameworks', day: 'Day 3 — Friday', label: 'Key frameworks quick review' },
-  { id: 'exam_flash', day: 'Saturday — Exam Day', label: 'Flashcard review only (30 min max)' },
-  { id: 'exam_nonew', day: 'Saturday — Exam Day', label: 'No new material' },
-]
-
-function planKey(): string {
-  const userId = useAuthStore.getState().user?.id ?? 'anonymous'
-  return `${userId}_plan_checks`
+function planKey(userId: string, certId: string): string {
+  return `${userId}_${certId}_plan_checks`
 }
 
-function loadChecks(): Record<string, boolean> {
-  try { return JSON.parse(localStorage.getItem(planKey()) ?? '{}') } catch { return {} }
+function buildPlan(domains: CertDomain[], examQuestions: number) {
+  const n = domains.length
+  const day1Count = Math.ceil(n / 3)
+  const day2Count = Math.ceil((n - day1Count) / 2)
+
+  const day1 = domains.slice(0, day1Count)
+  const day2 = domains.slice(day1Count, day1Count + day2Count)
+  const day3 = domains.slice(day1Count + day2Count)
+
+  return [
+    {
+      label: 'Day 1 — Foundation',
+      tasks: [
+        ...day1.map(d => ({ id: `d1_${d.name}`, label: `${d.name} — full study` })),
+        { id: 'd1_mini', label: '20Q Mini Drill' },
+        { id: 'd1_review', label: 'Review wrong answers' },
+      ],
+    },
+    {
+      label: 'Day 2 — Deep Dive',
+      tasks: [
+        ...day2.map(d => ({ id: `d2_${d.name}`, label: `${d.name} — full study` })),
+        { id: 'd2_mock', label: `Full ${examQuestions}Q timed mock exam` },
+        { id: 'd2_review', label: 'Review all wrong answers' },
+      ],
+    },
+    {
+      label: 'Day 3 — Consolidation',
+      tasks: [
+        ...day3.map(d => ({ id: `d3_${d.name}`, label: `${d.name} — full study` })),
+        { id: 'd3_mock2', label: `Second full ${examQuestions}Q timed exam` },
+        { id: 'd3_weak', label: 'Review weak domains only' },
+        { id: 'd3_frameworks', label: 'Key frameworks quick review' },
+      ],
+    },
+    {
+      label: 'Exam Day',
+      tasks: [
+        { id: 'exam_flash', label: 'Flashcard review only (30 min max)' },
+        { id: 'exam_nonew', label: 'No new material today' },
+      ],
+    },
+  ]
 }
 
 export default function StudyPlanPanel() {
-  const [checks, setChecks] = useState<Record<string, boolean>>(loadChecks)
+  const { certId: certIdParam } = useParams<{ certId?: string }>()
+  const certId = certIdParam ?? 'ccxp'
+  const cert = getCert(certId)
+  const userId = useAuthStore.getState().user?.id ?? 'anonymous'
+  const key = planKey(userId, certId)
+
+  const [checks, setChecks] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem(key) ?? '{}') } catch { return {} }
+  })
 
   useEffect(() => {
-    localStorage.setItem(planKey(), JSON.stringify(checks))
-  }, [checks])
+    localStorage.setItem(key, JSON.stringify(checks))
+  }, [checks, key])
 
-  const days = [...new Set(TASKS.map(t => t.day))]
-  const total = TASKS.length
+  if (!cert) return null
+
+  const plan = buildPlan(cert.domains, cert.examQuestions)
+  const total = plan.reduce((s, d) => s + d.tasks.length, 0)
   const done = Object.values(checks).filter(Boolean).length
 
   return (
     <div className="bg-ink rounded-2xl border border-white/10 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-cream font-serif text-xl">3-Day Study Plan</h2>
+        <h2 className="text-cream font-serif text-xl">{cert.name} 3-Day Study Plan</h2>
         <span className="text-mist text-sm">{done}/{total} completed</span>
       </div>
 
       <div className="h-1.5 bg-navy rounded-full mb-6">
-        <div className="h-1.5 bg-gold rounded-full transition-all" style={{ width: `${(done / total) * 100}%` }} />
+        <div className="h-1.5 bg-gold rounded-full transition-all" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%` }} />
       </div>
 
       <div className="space-y-6">
-        {days.map(day => (
-          <div key={day}>
-            <h3 className="text-gold text-sm font-semibold uppercase tracking-wider mb-3">{day}</h3>
+        {plan.map(day => (
+          <div key={day.label}>
+            <h3 className="text-gold text-sm font-semibold uppercase tracking-wider mb-3">{day.label}</h3>
             <div className="space-y-2">
-              {TASKS.filter(t => t.day === day).map(task => (
+              {day.tasks.map(task => (
                 <label key={task.id} className="flex items-center gap-3 cursor-pointer group">
                   <input
                     type="checkbox"

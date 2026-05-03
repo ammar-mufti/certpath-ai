@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useTutorStore } from '../../store/tutorStore'
 import { useAuthStore } from '../../store/authStore'
 import { useExamStore } from '../../store/examStore'
-import { DOMAIN_COLORS } from '../../store/examStore'
+import { getCert, AVAILABLE_CERTS, COMING_SOON_CERTS } from '../../data/certifications'
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
 
@@ -188,8 +188,10 @@ export default function TutorChat() {
     }
   }
 
-  const domainMatch = pageContext.match(/"([^"]+)" domain/)
-  const accentColor = domainMatch ? (DOMAIN_COLORS[domainMatch[1]] ?? '#C9A84C') : '#C9A84C'
+  const pathCertId = location.pathname.split('/').find(seg =>
+    AVAILABLE_CERTS.some(c => c.id === seg) || COMING_SOON_CERTS.some(c => c.id === seg)
+  ) ?? 'ccxp'
+  const accentColor = getCert(pathCertId)?.color ?? '#C9A84C'
 
   return (
     <>
