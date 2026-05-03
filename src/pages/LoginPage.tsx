@@ -5,6 +5,7 @@ import type { AuthUser } from '../store/authStore'
 import { parseJwt } from '../services/auth'
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
+console.log('Worker URL:', WORKER_URL)
 
 function GoogleIcon() {
   return (
