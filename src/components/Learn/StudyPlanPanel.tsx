@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuthStore } from '../../store/authStore'
 
 interface Task { id: string; label: string; day: string }
 
@@ -20,15 +21,20 @@ const TASKS: Task[] = [
   { id: 'exam_nonew', day: 'Saturday — Exam Day', label: 'No new material' },
 ]
 
+function planKey(): string {
+  const userId = useAuthStore.getState().user?.id ?? 'anonymous'
+  return `${userId}_plan_checks`
+}
+
 function loadChecks(): Record<string, boolean> {
-  try { return JSON.parse(localStorage.getItem('ccxp_plan_checks') ?? '{}') } catch { return {} }
+  try { return JSON.parse(localStorage.getItem(planKey()) ?? '{}') } catch { return {} }
 }
 
 export default function StudyPlanPanel() {
   const [checks, setChecks] = useState<Record<string, boolean>>(loadChecks)
 
   useEffect(() => {
-    localStorage.setItem('ccxp_plan_checks', JSON.stringify(checks))
+    localStorage.setItem(planKey(), JSON.stringify(checks))
   }, [checks])
 
   const days = [...new Set(TASKS.map(t => t.day))]

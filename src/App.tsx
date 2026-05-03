@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
+import { useHistoryStore } from './store/historyStore'
+import { useLearnStore } from './store/learnStore'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import AdminRoute from './components/Admin/AdminRoute'
 import LoginPage from './pages/LoginPage'
@@ -103,10 +105,18 @@ function MaintenanceGate({ children, maintenance }: { children: React.ReactNode;
 
 export default function App() {
   const init = useAuthStore(s => s.init)
+  const user = useAuthStore(s => s.user)
   const [health, setHealth] = useState<HealthData | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
   useEffect(() => { init() }, [init])
+
+  useEffect(() => {
+    if (user) {
+      useHistoryStore.getState().loadForUser()
+      useLearnStore.getState().loadForUser()
+    }
+  }, [user?.id])
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_WORKER_URL}/api/health`)

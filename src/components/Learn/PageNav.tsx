@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useLearnStore } from '../../store/learnStore'
-import { DOMAIN_TOPICS } from '../../utils/domainUtils'
+import { getCert } from '../../data/certifications'
 
 interface Section {
   id: string
@@ -17,7 +17,7 @@ export default function PageNav({ sections, activeDomain }: Props) {
   const [activeSection, setActiveSection] = useState<string>(sections[0]?.id ?? '')
   const { certId: certIdParam } = useParams<{ certId?: string }>()
   const certId = certIdParam ?? 'ccxp'
-  const { progress, getDomainProgress } = useLearnStore()
+  const { getDomainProgress, getReadTopics } = useLearnStore()
 
   useEffect(() => {
     const observers: IntersectionObserver[] = []
@@ -45,8 +45,11 @@ export default function PageNav({ sections, activeDomain }: Props) {
   }
 
   const domainProgress = activeDomain ? getDomainProgress(certId, activeDomain) : 0
-  const topicsRead = activeDomain ? (progress[activeDomain]?.topicsRead ?? []) : []
-  const topicCount = activeDomain ? (DOMAIN_TOPICS[activeDomain]?.length ?? 0) : 0
+  const topicsRead = activeDomain ? getReadTopics(certId, activeDomain) : []
+  const cert = getCert(certId)
+  const topicCount = activeDomain
+    ? (cert?.domains.find(d => d.name === activeDomain)?.topics.length ?? 0)
+    : 0
 
   return (
     <div className="w-full py-5 px-4 flex flex-col gap-5">

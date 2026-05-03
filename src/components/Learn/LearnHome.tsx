@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore'
 import { useLearnStore } from '../../store/learnStore'
 import { contentCache } from '../../services/contentCache'
 import { getCert } from '../../data/certifications'
@@ -22,7 +23,8 @@ export default function LearnHome({ certId }: Props) {
 
   if (!cert) return null
 
-  const examDateKey = `${certId}_exam_date`
+  const userId = useAuthStore.getState().user?.id ?? 'anonymous'
+  const examDateKey = `${userId}_${certId}_exam_date`
   const examDate = localStorage.getItem(examDateKey)
   const daysLeft = examDate
     ? Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))

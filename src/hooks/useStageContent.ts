@@ -18,14 +18,15 @@ export function useStageContent<T>(certId: string, domain: string, stage: Stage,
   const [error, setError] = useState<string | null>(null)
   const token = useAuthStore(s => s.token)
 
-  const cacheKey = stage === 'stage3-deepdive' && options?.topic
-    ? `${certId}_${domain}_stage3_${toTopicSlug(options.topic)}`
-    : `${certId}_${domain}_${stage}`
+  // For stage3 deep-dive, include the topic slug in the cache type so each topic is cached separately
+  const cacheType = stage === 'stage3-deepdive' && options?.topic
+    ? `stage3_${toTopicSlug(options.topic)}`
+    : stage
 
   const load = useCallback(async () => {
     if (loading) return
 
-    const cached = contentCache.get<T>(cacheKey)
+    const cached = contentCache.get<T>(certId, domain, cacheType)
     if (cached) {
       setData(cached)
       return
@@ -75,7 +76,7 @@ export function useStageContent<T>(certId: string, domain: string, stage: Stage,
       if (result.error) throw new Error(result.error)
       const content = result.data ?? (result as unknown as T)
 
-      contentCache.set(cacheKey, content, domain, stage)
+      contentCache.set(certId, domain, cacheType, content)
       setData(content)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load'
@@ -84,7 +85,7 @@ export function useStageContent<T>(certId: string, domain: string, stage: Stage,
     } finally {
       setLoading(false)
     }
-  }, [certId, domain, stage, options?.topic, token, cacheKey])
+  }, [certId, domain, stage, cacheType, options?.topic, token])
 
   return { data, loading, error, load }
 }

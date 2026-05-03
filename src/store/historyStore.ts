@@ -1,24 +1,31 @@
 import { create } from 'zustand'
+import { useAuthStore } from './authStore'
 import type { ExamAttempt, DomainScore, WrongQuestion } from '../types/history'
 
-const STORAGE_KEY = 'certpath_exam_history'
 const MAX_ATTEMPTS = 50
+
+function historyKey(): string {
+  const userId = useAuthStore.getState().user?.id ?? 'anonymous'
+  return `certpath_history_${userId}`
+}
 
 function load(): ExamAttempt[] {
   try {
-    const newData = localStorage.getItem(STORAGE_KEY)
-    if (newData) return JSON.parse(newData)
-    // MIGRATION: Legacy ccxp_exam_history → certpath_exam_history with certId/certName fields added.
-    // Safe to remove once no user has ccxp_exam_history remaining in localStorage.
-    const legacy = localStorage.getItem('ccxp_exam_history')
+    const data = localStorage.getItem(historyKey())
+    if (data) return JSON.parse(data)
+    // MIGRATION: Legacy shared certpath_exam_history → user-scoped key.
+    const legacy = localStorage.getItem('certpath_exam_history')
     if (legacy) {
-      const parsed = JSON.parse(legacy) as Omit<ExamAttempt, 'certId' | 'certName'>[]
-      const migrated: ExamAttempt[] = parsed.map(a => ({
-        ...a,
-        certId: 'ccxp',
-        certName: 'CCXP',
-      }))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      const parsed = JSON.parse(legacy) as ExamAttempt[]
+      localStorage.setItem(historyKey(), JSON.stringify(parsed))
+      return parsed
+    }
+    // MIGRATION: Even older ccxp_exam_history key.
+    const veryLegacy = localStorage.getItem('ccxp_exam_history')
+    if (veryLegacy) {
+      const parsed = JSON.parse(veryLegacy) as Omit<ExamAttempt, 'certId' | 'certName'>[]
+      const migrated: ExamAttempt[] = parsed.map(a => ({ ...a, certId: 'ccxp', certName: 'CCXP' }))
+      localStorage.setItem(historyKey(), JSON.stringify(migrated))
       return migrated
     }
     return []
@@ -28,11 +35,12 @@ function load(): ExamAttempt[] {
 }
 
 function save(attempts: ExamAttempt[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(attempts))
+  localStorage.setItem(historyKey(), JSON.stringify(attempts))
 }
 
 interface HistoryState {
   attempts: ExamAttempt[]
+  loadForUser: () => void
   addAttempt: (attempt: ExamAttempt) => void
   setAiAnalysis: (id: string, analysis: string) => void
   clearHistory: () => void
@@ -46,12 +54,16 @@ interface HistoryState {
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   attempts: load(),
 
+  loadForUser() {
+    set({ attempts: load() })
+  },
+
   addAttempt(attempt) {
-    set(state => {
-      const attempts = [attempt, ...state.attempts].slice(0, MAX_ATTEMPTS)
-      save(attempts)
-      return { attempts }
-    })
+    const key = historyKey()
+    const existing = JSON.parse(localStorage.getItem(key) ?? '[]') as ExamAttempt[]
+    const updated = [attempt, ...existing].slice(0, MAX_ATTEMPTS)
+    localStorage.setItem(key, JSON.stringify(updated))
+    set({ attempts: updated })
   },
 
   setAiAnalysis(id, analysis) {
@@ -63,7 +75,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   },
 
   clearHistory() {
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(historyKey())
     set({ attempts: [] })
   },
 

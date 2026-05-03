@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { useAuthStore } from './authStore'
+import { getCert } from '../data/certifications'
 
 export interface TopicContent {
   topic: string
@@ -43,25 +45,38 @@ interface LearnState {
   setQuizScore: (domain: string, score: number) => void
   getDomainProgress: (certId: string, domain: string) => number
   resetProgress: () => void
+  loadForUser: () => void
 }
 
-const STORAGE_KEY = 'certpath_learn_progress'
+function getUserId(): string {
+  return useAuthStore.getState().user?.id ?? 'anonymous'
+}
+
+function storageKey(): string {
+  return `${getUserId()}_learn_progress`
+}
 
 function loadProgress(): Record<string, DomainProgress> {
   try {
-    const newData = localStorage.getItem(STORAGE_KEY)
-    if (newData) return JSON.parse(newData)
-    // MIGRATION: Legacy ccxp_learn_progress → certpath_learn_progress with ccxp:: key prefix added.
-    // Safe to remove once no user has ccxp_learn_progress remaining in localStorage.
-    const legacy = localStorage.getItem('ccxp_learn_progress')
+    const data = localStorage.getItem(storageKey())
+    if (data) return JSON.parse(data)
+    // MIGRATION: Legacy certpath_learn_progress → user-scoped key.
+    // Pull from legacy key and migrate on first load.
+    const legacy = localStorage.getItem('certpath_learn_progress')
     if (legacy) {
       const parsed = JSON.parse(legacy) as Record<string, DomainProgress>
-      // Migrate: prefix all keys with ccxp::
+      localStorage.setItem(storageKey(), JSON.stringify(parsed))
+      return parsed
+    }
+    // MIGRATION: Even older ccxp_learn_progress key.
+    const veryLegacy = localStorage.getItem('ccxp_learn_progress')
+    if (veryLegacy) {
+      const parsed = JSON.parse(veryLegacy) as Record<string, DomainProgress>
       const migrated: Record<string, DomainProgress> = {}
       for (const [k, v] of Object.entries(parsed)) {
         migrated[`ccxp::${k}`] = v
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+      localStorage.setItem(storageKey(), JSON.stringify(migrated))
       return migrated
     }
     return {}
@@ -71,7 +86,7 @@ function loadProgress(): Record<string, DomainProgress> {
 }
 
 function saveProgress(p: Record<string, DomainProgress>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+  localStorage.setItem(storageKey(), JSON.stringify(p))
 }
 
 function progressKey(certId: string, domain: string) {
@@ -82,6 +97,10 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   activeDomain: null,
   activeTab: {},
   progress: loadProgress(),
+
+  loadForUser() {
+    set({ progress: loadProgress(), activeTab: {} })
+  },
 
   setActiveDomain(domain) {
     set({ activeDomain: domain })
@@ -133,7 +152,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   },
 
   resetProgress() {
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(storageKey())
     set({ progress: {}, activeTab: {} })
   },
 
@@ -141,7 +160,10 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     const key = progressKey(certId, domain)
     const p = get().progress[key]
     if (!p) return 0
-    const topicCount = DOMAIN_TOPICS[domain]?.length ?? 5
+    // Use cert registry for topic count — works for any cert, not just CCXP
+    const cert = getCert(certId)
+    const certDomain = cert?.domains.find(d => d.name === domain)
+    const topicCount = certDomain?.topics.length ?? 5
     const topicsScore = Math.min((p.topicsRead.length / topicCount) * 60, 60)
     const flashScore = Math.min((p.flashcardsKnown.length / 10) * 20, 20)
     const quizScore = p.quizScore !== null ? (p.quizScore / 5) * 20 : 0
@@ -149,52 +171,14 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   },
 }))
 
+// Kept for backwards compatibility — components that imported this can switch to getCert()
 export const DOMAIN_TOPICS: Record<string, string[]> = {
-  'CX Strategy': [
-    'CX Vision & Mission',
-    'Business Case for CX',
-    'CX Maturity Models',
-    'CX Governance & Ownership',
-    'CX Roadmap & Prioritization',
-    'Aligning CX to Corporate Strategy',
-  ],
-  'Customer-Centric Culture': [
-    'Culture Change Management',
-    'Leadership Buy-in & Sponsorship',
-    'Employee Engagement in CX',
-    'CX Champions Network',
-    'Embedding CX Behaviors',
-  ],
-  'Voice of Customer': [
-    'VoC Program Design',
-    'Listening Post Strategy',
-    'Quantitative vs Qualitative Research',
-    'Customer Journey Analytics',
-    'Insight Generation & Storytelling',
-    'Closing the Feedback Loop',
-  ],
-  'Experience Design': [
-    'Customer Journey Mapping',
-    'Service Design Principles',
-    'Design Thinking Process',
-    'Moments of Truth',
-    'Prototyping & Testing',
-    'Innovation in CX',
-  ],
-  'Metrics & Measurement': [
-    'NPS CSAT CES Explained',
-    'Linking CX to Business Outcomes',
-    'Building a CX Dashboard',
-    'Statistical Concepts for CX',
-    'ROI Calculation Methods',
-  ],
-  'Organizational Adoption': [
-    'Change Management for CX',
-    'Cross-functional Alignment',
-    'CX Roles & Responsibilities',
-    'Governance Structures',
-    'Sustaining CX Momentum',
-  ],
+  'CX Strategy': ['CX Vision & Mission','Business Case for CX','CX Maturity Models','CX Governance & Ownership','CX Roadmap & Prioritization','Aligning CX to Corporate Strategy'],
+  'Customer-Centric Culture': ['Culture Change Management','Leadership Buy-in & Sponsorship','Employee Engagement in CX','CX Champions Network','Embedding CX Behaviors'],
+  'Voice of Customer': ['VoC Program Design','Listening Post Strategy','Quantitative vs Qualitative Research','Customer Journey Analytics','Insight Generation & Storytelling','Closing the Feedback Loop'],
+  'Experience Design': ['Customer Journey Mapping','Service Design Principles','Design Thinking Process','Moments of Truth','Prototyping & Testing','Innovation in CX'],
+  'Metrics & Measurement': ['NPS CSAT CES Explained','Linking CX to Business Outcomes','Building a CX Dashboard','Statistical Concepts for CX','ROI Calculation Methods'],
+  'Organizational Adoption': ['Change Management for CX','Cross-functional Alignment','CX Roles & Responsibilities','Governance Structures','Sustaining CX Momentum'],
 }
 
 export const DOMAIN_WEIGHTS_DISPLAY: Record<string, number> = {
