@@ -30,41 +30,42 @@ function modeLabel(mode: string) {
 function AttemptCard({ attempt, passingScore }: { attempt: ExamAttempt; passingScore: number }) {
   const passed = attempt.pct >= passingScore
   return (
-    <div className="bg-ink border border-white/10 rounded-xl p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
+    <div className="card" style={{ padding: '1rem 1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
         <div>
-          <div className="text-cream font-semibold text-sm">{modeLabel(attempt.mode)}</div>
-          <div className="text-mist text-xs mt-0.5">{formatDate(attempt.date)}</div>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{modeLabel(attempt.mode)}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{formatDate(attempt.date)}</div>
         </div>
-        <div className="text-right flex-shrink-0">
-          <div className={`text-lg font-bold ${passed ? 'text-pass' : 'text-fail'}`}>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: passed ? 'var(--success)' : 'var(--error)' }}>
             {attempt.pct}%
           </div>
-          <div className={`text-xs font-semibold ${passed ? 'text-pass' : 'text-fail'}`}>
+          <span className={`badge ${passed ? 'badge-success' : 'badge-error'}`} style={{ fontSize: 10 }}>
             {passed ? 'PASS' : 'FAIL'}
-          </div>
+          </span>
         </div>
       </div>
 
-      <div className="h-1.5 bg-white/10 rounded-full">
-        <div
-          className={`h-1.5 rounded-full transition-all ${passed ? 'bg-pass' : 'bg-fail'}`}
-          style={{ width: `${attempt.pct}%` }}
-        />
+      <div className="progress-bar" style={{ marginBottom: 10 }}>
+        <div className="progress-fill" style={{
+          width: `${attempt.pct}%`,
+          background: passed ? 'var(--success)' : 'var(--error)',
+        }} />
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-mist">
+      <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-2)' }}>
         <span>{attempt.score}/{attempt.total} correct</span>
         {attempt.timeTaken > 0 && <span>⏱ {formatTime(attempt.timeTaken)}</span>}
         {attempt.selectedDomain && <span>📍 {attempt.selectedDomain}</span>}
       </div>
 
       {attempt.domainScores.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           {attempt.domainScores.map(ds => (
             <span
               key={ds.domain}
-              className={`text-[10px] px-2 py-0.5 rounded-full ${ds.pct >= passingScore ? 'bg-pass/20 text-pass' : 'bg-fail/20 text-fail'}`}
+              className={`badge ${ds.pct >= passingScore ? 'badge-success' : 'badge-error'}`}
+              style={{ fontSize: 10 }}
             >
               {ds.domain.split(' ')[0]} {ds.pct}%
             </span>
@@ -78,20 +79,22 @@ function AttemptCard({ attempt, passingScore }: { attempt: ExamAttempt; passingS
 function StatsBanner({ certId, passingScore }: { certId: string; passingScore: number }) {
   const { attempts, getBestScore, getLatestScore, getAverageScore } = useHistoryStore()
   const certAttempts = attempts.filter(a => a.certId === certId)
-  const best = getBestScore(certId)
+  const best   = getBestScore(certId)
   const latest = getLatestScore(certId)
-  const avg = getAverageScore(certId)
+  const avg    = getAverageScore(certId)
 
   return (
-    <div className="grid grid-cols-3 gap-3 mb-6">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: '1.5rem' }}>
       {[
-        { label: 'Best Score', value: best != null ? `${best}%` : '—', color: 'text-pass' },
-        { label: 'Latest', value: latest != null ? `${latest}%` : '—', color: latest != null && latest >= passingScore ? 'text-pass' : 'text-fail' },
-        { label: `Average (${certAttempts.length})`, value: avg != null ? `${avg}%` : '—', color: 'text-gold' },
+        { label: 'Best Score',  value: best   != null ? `${best}%`   : '—', good: (best   ?? 0) >= passingScore },
+        { label: 'Latest',      value: latest != null ? `${latest}%` : '—', good: (latest ?? 0) >= passingScore },
+        { label: `Average (${certAttempts.length})`, value: avg != null ? `${avg}%` : '—', good: (avg ?? 0) >= passingScore },
       ].map(s => (
-        <div key={s.label} className="bg-ink border border-white/10 rounded-xl p-4 text-center">
-          <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-          <div className="text-mist text-xs mt-1">{s.label}</div>
+        <div key={s.label} className="card" style={{ padding: '1rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: s.good ? 'var(--success)' : 'var(--error)', fontFamily: 'Noto Serif, serif' }}>
+            {s.value}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{s.label}</div>
         </div>
       ))}
     </div>
@@ -120,14 +123,13 @@ function QuestionBankTab({ certId }: { certId: string }) {
 
   if (sets.length === 0) {
     return (
-      <div className="bg-ink rounded-2xl p-12 border border-white/10 text-center">
-        <div className="text-5xl mb-4">📝</div>
-        <h2 className="text-cream font-serif text-xl mb-2">No saved question sets</h2>
-        <p className="text-mist text-sm">Complete your first exam to save questions automatically.</p>
-        <button
-          onClick={() => navigate(`/${certId}/exam`)}
-          className="mt-4 px-6 py-2 bg-gold text-navy font-bold rounded-lg hover:bg-amber-400 transition-colors text-sm"
-        >
+      <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No saved question sets</h2>
+        <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: '1.25rem' }}>
+          Complete your first exam to save questions automatically.
+        </p>
+        <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => navigate(`/${certId}/exam`)}>
           Start an Exam →
         </button>
       </div>
@@ -135,61 +137,48 @@ function QuestionBankTab({ certId }: { certId: string }) {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-mist text-sm">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <p style={{ fontSize: 13, color: 'var(--text-2)' }}>
         Questions are saved automatically after each generation. Retake anytime without using the API.
       </p>
       {sets.map(set => {
         const domainCounts: Record<string, number> = {}
-        for (const q of set.questions) {
-          domainCounts[q.domain] = (domainCounts[q.domain] ?? 0) + 1
-        }
+        for (const q of set.questions) domainCounts[q.domain] = (domainCounts[q.domain] ?? 0) + 1
         const lastUsedLabel = set.lastUsed ? formatDate(set.lastUsed) : 'Never used'
 
         return (
-          <div key={set.id} className="bg-ink border border-white/10 rounded-xl p-5 space-y-3">
-            <div className="flex items-start justify-between gap-3">
+          <div key={set.id} className="card" style={{ padding: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
               <div>
-                <div className="text-cream font-semibold">{set.label}</div>
-                <div className="text-mist text-xs mt-0.5">
+                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{set.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
                   {set.totalCount} questions · Used {set.timesUsed}× · Last: {lastUsedLabel}
                 </div>
               </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-mist flex-shrink-0">
-                {modeLabel(set.mode)}
-              </span>
+              <span className="badge badge-gray" style={{ flexShrink: 0 }}>{modeLabel(set.mode)}</span>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
               {Object.entries(domainCounts).map(([domain, count]) => (
-                <span key={domain} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-mist border border-white/10">
+                <span key={domain} className="badge badge-gray" style={{ fontSize: 10 }}>
                   {domain.split(' ')[0]} ({count})
                 </span>
               ))}
             </div>
 
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => handleRetake(set)}
-                className="flex-1 py-2 rounded-lg bg-gold text-navy text-sm font-bold hover:bg-amber-400 transition-colors"
-              >
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" style={{ flex: 1, fontSize: 13 }} onClick={() => handleRetake(set)}>
                 Retake This Set →
               </button>
               <button
+                className={`btn ${deletingId === set.id ? 'btn-danger' : 'btn-ghost'}`}
+                style={{ fontSize: 13, padding: '6px 14px' }}
                 onClick={() => handleDelete(set.id)}
-                className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                  deletingId === set.id
-                    ? 'bg-fail text-white font-bold'
-                    : 'border border-white/20 text-mist hover:border-fail/50 hover:text-fail'
-                }`}
               >
-                {deletingId === set.id ? 'Confirm Delete' : '🗑 Delete'}
+                {deletingId === set.id ? 'Confirm Delete' : '🗑'}
               </button>
               {deletingId === set.id && (
-                <button
-                  onClick={() => setDeletingId(null)}
-                  className="px-3 py-2 rounded-lg text-sm text-mist border border-white/20 hover:text-cream transition-colors"
-                >
+                <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={() => setDeletingId(null)}>
                   Cancel
                 </button>
               )}
@@ -211,45 +200,52 @@ export default function HistoryPage({ certId }: Props) {
   const passingScore = cert?.passingScore ?? 70
 
   return (
-    <div className="min-h-screen bg-navy">
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
       <TopNav />
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-6">
-          {cert && <span className="text-2xl">{cert.icon}</span>}
-          <h1 className="text-cream font-serif text-2xl">{cert?.name ?? certId} History</h1>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '5rem 1.25rem 3rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
+          {cert && <span style={{ fontSize: '1.5rem' }}>{cert.icon}</span>}
+          <h1 style={{ fontSize: '1.5rem' }}>{cert?.name ?? certId} History</h1>
         </div>
 
-        <div className="flex gap-1 mb-6 bg-ink rounded-xl p-1 border border-white/10">
-          <button
-            onClick={() => setTab('records')}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              tab === 'records' ? 'bg-gold text-navy' : 'text-mist hover:text-cream'
-            }`}
-          >
-            📊 Exam Records {certAttempts.length > 0 && `(${certAttempts.length})`}
-          </button>
-          <button
-            onClick={() => setTab('bank')}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              tab === 'bank' ? 'bg-gold text-navy' : 'text-mist hover:text-cream'
-            }`}
-          >
-            📝 Question Bank {questionBank.hasAny(certId) && `(${questionBank.getAll(certId).length})`}
-          </button>
+        {/* Tab bar */}
+        <div style={{
+          display: 'flex', gap: 4, marginBottom: '1.5rem',
+          background: 'var(--bg-raised)', borderRadius: 'var(--r)',
+          padding: 4, border: '1px solid var(--border)',
+        }}>
+          {[
+            { id: 'records' as Tab, label: `📊 Exam Records${certAttempts.length > 0 ? ` (${certAttempts.length})` : ''}` },
+            { id: 'bank' as Tab,    label: `📝 Question Bank${questionBank.hasAny(certId) ? ` (${questionBank.getAll(certId).length})` : ''}` },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1, padding: '8px 12px', borderRadius: 'var(--r-sm)',
+                border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                background: tab === t.id ? 'var(--accent)' : 'transparent',
+                color: tab === t.id ? 'var(--accent-fg)' : 'var(--text-2)',
+                transition: 'all 0.15s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {tab === 'records' && (
           <>
             {certAttempts.length === 0 ? (
-              <div className="bg-ink rounded-2xl p-12 border border-white/10 text-center">
-                <div className="text-5xl mb-4">📊</div>
-                <h2 className="text-cream font-serif text-xl mb-2">No {cert?.name ?? certId} exam history yet</h2>
-                <p className="text-mist text-sm">Complete a practice exam to start tracking your progress</p>
+              <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                <h2 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No {cert?.name ?? certId} exam history yet</h2>
+                <p style={{ color: 'var(--text-2)', fontSize: 14 }}>Complete a practice exam to start tracking your progress</p>
               </div>
             ) : (
               <>
                 <StatsBanner certId={certId} passingScore={passingScore} />
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {certAttempts.map(a => <AttemptCard key={a.id} attempt={a} passingScore={passingScore} />)}
                 </div>
               </>

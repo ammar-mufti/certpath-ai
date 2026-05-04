@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useLayoutEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 interface ThemeContextValue {
   isDark: boolean
@@ -7,31 +7,17 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({ isDark: false, toggle: () => {} })
 
-function getInitialTheme(): boolean {
-  try {
-    const stored = localStorage.getItem('certpath_theme')
-    if (stored === 'dark') return true
-    if (stored === 'light') return false
-  } catch { /* SSR guard */ }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDark, setIsDark] = useState(getInitialTheme)
+  const [isDark, setIsDark] = useState(
+    () => document.documentElement.classList.contains('dark')
+  )
 
-  useLayoutEffect(() => {
-    const root = document.documentElement
-    if (isDark) {
-      root.classList.add('dark')
-      root.classList.remove('light')
-    } else {
-      root.classList.remove('dark')
-      root.classList.add('light')
-    }
-    try { localStorage.setItem('certpath_theme', isDark ? 'dark' : 'light') } catch { /* */ }
+  const toggle = useCallback(() => {
+    const next = !isDark
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('certpath_theme', next ? 'dark' : 'light')
+    setIsDark(next)
   }, [isDark])
-
-  const toggle = useCallback(() => setIsDark(prev => !prev), [])
 
   return (
     <ThemeContext.Provider value={{ isDark, toggle }}>

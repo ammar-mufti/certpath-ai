@@ -23,7 +23,7 @@ import { getCert, AVAILABLE_CERTS } from './data/certifications'
 function OfflineBanner() {
   const [offline, setOffline] = useState(!navigator.onLine)
   useEffect(() => {
-    const on = () => setOffline(false)
+    const on  = () => setOffline(false)
     const off = () => setOffline(true)
     window.addEventListener('online', on)
     window.addEventListener('offline', off)
@@ -31,18 +31,22 @@ function OfflineBanner() {
   }, [])
   if (!offline) return null
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-warn text-navy text-center text-sm py-2 font-medium">
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+      background: '#c07a20', color: '#fff',
+      textAlign: 'center', fontSize: 13, padding: '8px 16px', fontWeight: 500,
+    }}>
       You're offline — showing cached content
     </div>
   )
 }
 
 function RootRedirect() {
-  const user = useAuthStore(s => s.user)
+  const user      = useAuthStore(s => s.user)
   const isLoading = useAuthStore(s => s.isLoading)
   if (isLoading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-primary text-lg animate-pulse font-serif">Loading…</div>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: 'var(--accent)', fontSize: '1.1rem', fontFamily: 'Noto Serif, serif' }}>Loading…</div>
     </div>
   )
   if (user) return <Navigate to="/dashboard" replace />
@@ -91,15 +95,20 @@ interface HealthData {
 function AnnouncementBanner({ banner, onDismiss }: { banner: string | null; onDismiss: () => void }) {
   if (!banner) return null
   return (
-    <div className="bg-primary text-on-primary text-xs text-center py-2 px-4 font-medium flex items-center justify-center gap-2 z-[200] relative">
+    <div style={{
+      background: 'var(--accent)', color: 'var(--accent-fg)',
+      fontSize: 13, textAlign: 'center', padding: '8px 16px',
+      fontWeight: 500, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', gap: 8, position: 'relative', zIndex: 200,
+    }}>
       <span>{banner}</span>
-      <button onClick={onDismiss} className="opacity-60 hover:opacity-100 ml-1">✕</button>
+      <button onClick={onDismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, color: 'inherit', fontSize: 16 }}>✕</button>
     </div>
   )
 }
 
 function MaintenanceGate({ children, maintenance }: { children: React.ReactNode; maintenance: boolean }) {
-  const user = useAuthStore(s => s.user)
+  const user      = useAuthStore(s => s.user)
   const isLoading = useAuthStore(s => s.isLoading)
   if (maintenance && !isLoading && !user?.isAdmin) return <MaintenancePage />
   return <>{children}</>
@@ -107,49 +116,58 @@ function MaintenanceGate({ children, maintenance }: { children: React.ReactNode;
 
 function MobileBottomNav() {
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
   const { setOpen } = useTutorStore()
 
-  // Find certId from current path
-  const segs = location.pathname.split('/').filter(Boolean)
+  const segs   = location.pathname.split('/').filter(Boolean)
   const certId = AVAILABLE_CERTS.find(c => segs.includes(c.id))?.id
-
   if (!certId) return null
 
   const tabs = [
-    { label: 'Study', icon: 'menu_book', path: `/${certId}/learn` },
-    { label: 'Exam', icon: 'edit_note', path: `/${certId}/exam` },
-    { label: 'Tutor', icon: 'smart_toy', action: 'tutor' },
-    { label: 'History', icon: 'history', path: `/${certId}/history` },
-    { label: 'Certs', icon: 'verified', path: '/dashboard' },
+    { label: 'Study',   icon: 'menu_book', path: `/${certId}/learn` },
+    { label: 'Exam',    icon: 'edit_note', path: `/${certId}/exam` },
+    { label: 'Tutor',   icon: 'smart_toy', action: 'tutor' },
+    { label: 'History', icon: 'history',   path: `/${certId}/history` },
+    { label: 'Certs',   icon: 'grid_view', path: '/dashboard' },
   ]
 
   return (
-    <nav className="fixed bottom-0 w-full bg-surface-container/95 backdrop-blur-lg border-t border-outline-variant z-40 md:hidden">
-      <div className="flex justify-around items-center h-16 px-2">
-        {tabs.map(tab => {
-          const isActive = tab.path ? location.pathname.startsWith(tab.path) : false
-          return (
-            <button
-              key={tab.label}
-              onClick={() => tab.action === 'tutor' ? setOpen(true) : navigate(tab.path!)}
-              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all ${
-                isActive
-                  ? 'text-primary'
-                  : 'text-on-surface-variant hover:text-on-surface'
-              }`}
+    <nav style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      background: 'var(--bg-card)', borderTop: '1px solid var(--border)',
+      zIndex: 40, display: 'flex',
+    }}
+    className="md-hidden-mobile-nav"
+    >
+      {tabs.map(tab => {
+        const isActive = tab.path ? location.pathname.startsWith(tab.path) : false
+        return (
+          <button
+            key={tab.label}
+            onClick={() => tab.action === 'tutor' ? setOpen(true) : navigate(tab.path!)}
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 2, padding: '10px 4px',
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              color: isActive ? 'var(--accent)' : 'var(--text-3)',
+              transition: 'color 0.15s',
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: 20,
+                fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+              }}
             >
-              <span
-                className="material-symbols-outlined"
-                style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
-              >
-                {tab.icon}
-              </span>
-              <span className="text-[9px] font-semibold uppercase tracking-widest font-label">{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
+              {tab.icon}
+            </span>
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              {tab.label}
+            </span>
+          </button>
+        )
+      })}
     </nav>
   )
 }
@@ -157,7 +175,7 @@ function MobileBottomNav() {
 export default function App() {
   const init = useAuthStore(s => s.init)
   const user = useAuthStore(s => s.user)
-  const [health, setHealth] = useState<HealthData | null>(null)
+  const [health,          setHealth]          = useState<HealthData | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
   useEffect(() => { init() }, [init])
@@ -182,44 +200,44 @@ export default function App() {
 
   return (
     <ThemeProvider>
-    <BrowserRouter basename="/certpath-ai">
-      <AnnouncementBanner
-        banner={bannerDismissed ? null : (health?.banner ?? null)}
-        onDismiss={() => setBannerDismissed(true)}
-      />
-      <OfflineBanner />
-      <MaintenanceGate maintenance={health?.maintenance ?? false}>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/login" element={<LoginPage />} />
+      <BrowserRouter basename="/certpath-ai">
+        <AnnouncementBanner
+          banner={bannerDismissed ? null : (health?.banner ?? null)}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+        <OfflineBanner />
+        <MaintenanceGate maintenance={health?.maintenance ?? false}>
+          <Routes>
+            {/* Public */}
+            <Route path="/"      element={<RootRedirect />} />
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Admin */}
-          <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
+            {/* Admin */}
+            <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
 
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            {/* Dashboard */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-          {/* Cert-scoped routes */}
-          <Route path="/:certId/learn" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
-          <Route path="/:certId/learn/:domainSlug" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
-          <Route path="/:certId/exam/*" element={<ProtectedRoute><CertExamPage /></ProtectedRoute>} />
-          <Route path="/:certId/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
-          <Route path="/:certId/history" element={<ProtectedRoute><CertHistoryPage /></ProtectedRoute>} />
+            {/* Cert-scoped routes */}
+            <Route path="/:certId/learn"            element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
+            <Route path="/:certId/learn/:domainSlug" element={<ProtectedRoute><CertLearnPage /></ProtectedRoute>} />
+            <Route path="/:certId/exam/*"            element={<ProtectedRoute><CertExamPage /></ProtectedRoute>} />
+            <Route path="/:certId/results"           element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+            <Route path="/:certId/history"           element={<ProtectedRoute><CertHistoryPage /></ProtectedRoute>} />
 
-          {/* Legacy redirects */}
-          <Route path="/learn" element={<Navigate to="/ccxp/learn" replace />} />
-          <Route path="/learn/:domainSlug" element={<Navigate to="/ccxp/learn" replace />} />
-          <Route path="/exam/*" element={<Navigate to="/ccxp/exam" replace />} />
-          <Route path="/results" element={<Navigate to="/ccxp/results" replace />} />
-          <Route path="/history" element={<Navigate to="/ccxp/history" replace />} />
+            {/* Legacy redirects */}
+            <Route path="/learn"             element={<Navigate to="/ccxp/learn" replace />} />
+            <Route path="/learn/:domainSlug" element={<Navigate to="/ccxp/learn" replace />} />
+            <Route path="/exam/*"            element={<Navigate to="/ccxp/exam"  replace />} />
+            <Route path="/results"           element={<Navigate to="/ccxp/results" replace />} />
+            <Route path="/history"           element={<Navigate to="/ccxp/history" replace />} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </MaintenanceGate>
-      <MobileBottomNav />
-      <TutorChatWrapper />
-    </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </MaintenanceGate>
+        <MobileBottomNav />
+        <TutorChatWrapper />
+      </BrowserRouter>
     </ThemeProvider>
   )
 }

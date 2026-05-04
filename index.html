@@ -3,6 +3,13 @@
   <head>
     <script>
       (function() {
+        var t = localStorage.getItem('certpath_theme');
+        var d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', t ? t === 'dark' : d);
+      })();
+    </script>
+    <script>
+      (function() {
         const p = new URLSearchParams(window.location.search).get('p');
         if (p) {
           window.history.replaceState(

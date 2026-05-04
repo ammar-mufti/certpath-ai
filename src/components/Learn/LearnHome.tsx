@@ -1,21 +1,19 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useLearnStore } from '../../store/learnStore'
 import { useHistoryStore } from '../../store/historyStore'
 import { contentCache } from '../../services/contentCache'
 import { getCert } from '../../data/certifications'
 import { toDomainSlug, getDomainIcon } from '../../utils/domainUtils'
-import StudyPlanPanel from './StudyPlanPanel'
-import LearnLayout from './LearnLayout'
+import { AppShell } from '../Layout/AppShell'
+import { CertSidebar } from '../Layout/CertSidebar'
+import TopNav from '../Nav/TopNav'
 
-interface Props {
-  certId: string
-}
-
-export default function LearnHome({ certId }: Props) {
+export default function LearnHome() {
+  const { certId } = useParams<{ certId: string }>()
   const navigate = useNavigate()
-  const cert = getCert(certId)
+  const cert = getCert(certId ?? '')
   const { getDomainProgress, resetProgress } = useLearnStore()
   const { attempts } = useHistoryStore()
   const [resetMode, setResetMode] = useState<null | 'all' | 'content'>(null)
@@ -23,26 +21,19 @@ export default function LearnHome({ certId }: Props) {
 
   if (!cert) return null
 
-  const userId = useAuthStore.getState().user?.id ?? 'anonymous'
+  const userId     = useAuthStore.getState().user?.id ?? 'anonymous'
   const examDateKey = `${userId}_${certId}_exam_date`
-  const examDate = localStorage.getItem(examDateKey)
-  const daysLeft = examDate
-    ? Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null
+  const examDate   = localStorage.getItem(examDateKey)
+  const daysLeft   = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86_400_000) : null
 
   const overallProgress = cert.domains.length > 0
-    ? Math.round(cert.domains.reduce((sum, d) => sum + getDomainProgress(certId, d.name), 0) / cert.domains.length)
+    ? Math.round(cert.domains.reduce((s, d) => s + getDomainProgress(certId ?? '', d.name), 0) / cert.domains.length)
     : 0
 
-  // Find weak domain from exam history
   const certAttempts = attempts.filter(a => a.certId === certId)
   let weakDomain: string | null = null
-  if (certAttempts.length > 0) {
-    const last = certAttempts[0]
-    if (last.domainScores && last.domainScores.length > 0) {
-      const sorted = [...last.domainScores].sort((a, b) => a.pct - b.pct)
-      weakDomain = sorted[0].domain
-    }
+  if (certAttempts.length > 0 && certAttempts[0].domainScores?.length > 0) {
+    weakDomain = [...certAttempts[0].domainScores].sort((a, b) => a.pct - b.pct)[0].domain
   }
 
   function showToast(msg: string) {
@@ -51,7 +42,7 @@ export default function LearnHome({ certId }: Props) {
   }
 
   function handleResetAll() {
-    contentCache.clearCert(certId)
+    contentCache.clearCert(certId ?? '')
     resetProgress()
     setResetMode(null)
     showToast('Progress reset — fresh content generates as you study')
@@ -59,204 +50,226 @@ export default function LearnHome({ certId }: Props) {
   }
 
   function handleResetContent() {
-    contentCache.clearCert(certId)
+    contentCache.clearCert(certId ?? '')
     setResetMode(null)
     showToast('AI content cleared — will regenerate as you study')
     setTimeout(() => window.location.reload(), 1500)
   }
 
   return (
-    <LearnLayout>
-      <div className="max-w-3xl mx-auto px-5 py-8 pb-24 md:pb-10">
+    <>
+      <TopNav />
+      <AppShell sidebar={<CertSidebar />}>
         {toast && (
-          <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-surface-container-highest text-on-surface text-sm font-medium px-5 py-2.5 rounded-xl shadow-lg border border-outline-variant">
+          <div style={{
+            position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 200, background: 'var(--bg-card)', color: 'var(--text)',
+            fontSize: 13, fontWeight: 500, padding: '10px 20px',
+            borderRadius: 'var(--r)', boxShadow: 'var(--shadow-lg)',
+            border: '1px solid var(--border)',
+          }}>
             {toast}
           </div>
         )}
 
-        {/* Header */}
-        <div className="mb-8 space-y-2">
-          <span className="font-label text-primary uppercase tracking-widest text-xs">
-            {cert.issuer} · {new Date().getFullYear()}
-          </span>
-          <h1 className="font-serif text-h1 text-on-surface leading-tight">
-            {cert.name} study guide
-          </h1>
-          <p className="text-on-surface-variant text-sm max-w-md leading-relaxed">{cert.about}</p>
-        </div>
-
-        {/* AI Insight */}
-        <div className="ai-insight-glow rounded-xl p-4 mb-8 border-l-4 border-l-primary flex gap-4 items-start">
-          <span className="material-symbols-outlined text-primary mt-0.5 flex-shrink-0">auto_awesome</span>
-          <div>
-            <h4 className="font-label text-primary mb-1 text-xs">AI RECOMMENDED FOCUS</h4>
-            <p className="text-on-surface text-sm leading-relaxed">
-              {weakDomain
-                ? `Focus on "${weakDomain}" based on your recent exam performance.`
-                : cert.domains[0]
-                  ? `Start with ${cert.domains[0].name} — it's the highest-weighted domain at ${cert.domains[0].percentage}% of the exam.`
-                  : `Begin with the first domain to build foundational knowledge.`
-              }
-            </p>
+        <div style={{ maxWidth: 760 }}>
+          {/* Header */}
+          <div style={{ marginBottom: '2rem' }}>
+            <p className="label" style={{ marginBottom: 8 }}>{cert.issuer} · {new Date().getFullYear()}</p>
+            <h1 style={{ fontSize: '2rem', marginBottom: 8 }}>{cert.name} Study Guide</h1>
+            <p style={{ color: 'var(--text-2)', fontSize: 14, maxWidth: 500, lineHeight: 1.6 }}>{cert.about}</p>
           </div>
-        </div>
 
-        {/* Progress overview */}
-        <div className="bg-surface-container rounded-xl p-5 mb-10 border border-outline-variant">
-          <div className="flex justify-between items-end mb-4">
+          {/* AI Insight */}
+          <div className="ai-insight" style={{ marginBottom: '1.75rem' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--accent)', fontSize: 20 }}>
+              auto_awesome
+            </span>
             <div>
-              <p className="font-label text-on-surface-variant mb-1 text-xs">OVERALL READINESS</p>
-              <p className="font-serif text-2xl font-bold text-on-surface tabular">
-                {overallProgress}%
-                <span className="text-sm font-sans font-normal text-on-surface-variant"> / 100%</span>
+              <p className="label" style={{ color: 'var(--accent)', marginBottom: 4 }}>AI RECOMMENDED FOCUS</p>
+              <p style={{ fontSize: 14, color: 'var(--text-2)' }}>
+                {weakDomain
+                  ? `Focus on "${weakDomain}" — it was your weakest domain in your last exam.`
+                  : cert.domains[0]
+                    ? `Start with ${cert.domains[0].name} — it's worth ${cert.domains[0].percentage}% of your exam.`
+                    : 'Begin with the first domain to build foundational knowledge.'
+                }
               </p>
             </div>
-            <div className="text-right">
-              <p className="font-label text-on-surface-variant mb-1 text-xs">EXAM INFO</p>
-              <p className="text-primary font-semibold text-sm tabular">
-                {cert.examQuestions}Q · Pass {cert.passingScore}%
-              </p>
-              {daysLeft !== null && (
-                <p className={`text-xs mt-0.5 tabular ${daysLeft <= 2 ? 'text-error' : 'text-on-surface-variant'}`}>
-                  {daysLeft}d until exam
+          </div>
+
+          {/* Progress card */}
+          <div className="card" style={{ padding: '1.25rem 1.5rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+              <div>
+                <p className="label" style={{ marginBottom: 4 }}>OVERALL READINESS</p>
+                <div style={{ fontFamily: 'Noto Serif, serif', fontSize: '1.75rem', fontWeight: 700, color: 'var(--text)' }}>
+                  {overallProgress}%
+                  <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--text-3)' }}> / 100%</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p className="label" style={{ marginBottom: 4 }}>EXAM INFO</p>
+                <p style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 14 }}>
+                  {cert.examQuestions}Q · Pass {cert.passingScore}%
                 </p>
-              )}
-            </div>
-          </div>
-          <div className="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-primary h-full rounded-full transition-all duration-700"
-              style={{ width: `${overallProgress}%`, boxShadow: overallProgress > 0 ? '0 0 8px rgba(242,202,80,0.6)' : 'none' }}
-            />
-          </div>
-
-          {/* Set exam date */}
-          {!examDate && (
-            <div className="mt-4 pt-4 border-t border-outline-variant flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary text-base">calendar_today</span>
-              <span className="text-on-surface-variant text-xs flex-1">Set your exam date for a countdown</span>
-              <input
-                type="date"
-                className="bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-1.5 text-on-surface text-xs focus:outline-none focus:border-primary/50"
-                onChange={e => { localStorage.setItem(examDateKey, e.target.value); window.location.reload() }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Domain modules list */}
-        <div className="space-y-3 mb-10">
-          {cert.domains.map((domain, idx) => {
-            const hasContent = contentCache.hasContent(certId, domain.name)
-            const generatedDate = contentCache.getGeneratedDate(certId, domain.name)
-            const progress = getDomainProgress(certId, domain.name)
-
-            return (
-              <div key={domain.name} className="group">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/${certId}/learn/${toDomainSlug(domain.name)}`)}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 text-left hover:border-primary/40 ${
-                    hasContent
-                      ? 'bg-surface-container border-outline-variant hover:bg-surface-container-high'
-                      : 'bg-surface-container-low border-outline-variant/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    {/* Icon box */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border flex-shrink-0 ${
-                      hasContent
-                        ? 'bg-primary/10 border-primary/20 text-primary'
-                        : 'bg-surface-container-highest border-outline-variant text-on-surface-variant'
-                    }`}>
-                      <span className="material-symbols-outlined text-base">{getDomainIcon(domain.name)}</span>
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="font-label text-on-surface-variant text-[10px] mb-0.5">
-                        DOMAIN {String(idx + 1).padStart(2, '0')} · {domain.percentage}% OF EXAM
-                      </p>
-                      <h3 className="font-serif font-semibold text-on-surface text-base group-hover:text-primary transition-colors truncate">
-                        {domain.name}
-                      </h3>
-                      <p className="text-on-surface-variant text-xs mt-0.5">
-                        {domain.topics.length} topics · {domain.weight} questions
-                        {generatedDate && <span className="text-outline"> · {generatedDate}</span>}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-                    {progress > 0 && (
-                      <span className="font-label text-primary text-xs tabular">{progress}%</span>
-                    )}
-                    <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-base">
-                      chevron_right
-                    </span>
-                  </div>
-                </button>
-
-                {/* Progress bar under card */}
-                {progress > 0 && (
-                  <div className="mx-4 mt-1 h-0.5 bg-surface-container-highest rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary/60 transition-all duration-700"
-                      style={{ width: `${progress}%`, boxShadow: '0 0 4px rgba(242,202,80,0.4)' }}
-                    />
-                  </div>
+                {daysLeft !== null && (
+                  <p style={{ fontSize: 12, marginTop: 2, color: daysLeft <= 2 ? 'var(--error)' : 'var(--text-3)' }}>
+                    {daysLeft}d until exam
+                  </p>
                 )}
               </div>
-            )
-          })}
-        </div>
-
-        {/* Take exam CTA */}
-        <button
-          onClick={() => navigate(`/${certId}/exam`)}
-          className="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-primary-btn hover:shadow-[0_0_20px_rgba(242,202,80,0.4)] hover:scale-[1.01] active:scale-[0.99] transition-all text-sm uppercase tracking-widest mb-10"
-        >
-          Take {cert.name} practice exam →
-        </button>
-
-        <StudyPlanPanel />
-
-        {/* Reset section */}
-        <div className="mt-10 pt-6 border-t border-outline-variant space-y-3">
-          {resetMode === null && (
-            <div className="flex gap-4">
-              <button onClick={() => setResetMode('all')} className="text-on-surface-variant/50 hover:text-on-surface-variant text-xs transition-colors">
-                ↺ Reset study progress
-              </button>
-              <span className="text-outline-variant">·</span>
-              <button onClick={() => setResetMode('content')} className="text-on-surface-variant/50 hover:text-on-surface-variant text-xs transition-colors">
-                ↺ Regenerate AI content
-              </button>
             </div>
-          )}
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${overallProgress}%` }} />
+            </div>
 
-          {resetMode === 'all' && (
-            <div className="bg-surface-container border border-error/20 rounded-xl p-4 space-y-3">
-              <p className="text-on-surface text-sm font-semibold">Reset {cert.name} study progress?</p>
-              <p className="text-on-surface-variant text-xs">Clears AI content, topic read marks, and quiz scores. Exam history is kept.</p>
-              <div className="flex gap-2">
-                <button onClick={() => setResetMode(null)} className="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:text-on-surface transition-colors">Cancel</button>
-                <button onClick={handleResetAll} className="px-4 py-1.5 rounded-lg bg-error text-on-error font-bold text-sm hover:opacity-90 transition-opacity">Yes, reset</button>
+            {!examDate && (
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 17, color: 'var(--accent)' }}>calendar_today</span>
+                <span style={{ fontSize: 13, color: 'var(--text-2)', flex: 1 }}>Set your exam date for a countdown</span>
+                <input
+                  type="date"
+                  className="input"
+                  style={{ width: 'auto', padding: '4px 10px', fontSize: 13 }}
+                  onChange={e => { localStorage.setItem(examDateKey, e.target.value); window.location.reload() }}
+                />
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {resetMode === 'content' && (
-            <div className="bg-surface-container border border-outline-variant rounded-xl p-4 space-y-3">
-              <p className="text-on-surface text-sm font-semibold">Regenerate {cert.name} AI content?</p>
-              <p className="text-on-surface-variant text-xs">Clears cached AI content only. Progress and exam history are kept.</p>
-              <div className="flex gap-2">
-                <button onClick={() => setResetMode(null)} className="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:text-on-surface transition-colors">Cancel</button>
-                <button onClick={handleResetContent} className="px-4 py-1.5 rounded-lg bg-primary text-on-primary font-bold text-sm hover:brightness-110 transition-all">Yes, regenerate</button>
+          {/* Domain modules */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: '2rem' }}>
+            {cert.domains.map((domain, idx) => {
+              const hasContent  = contentCache.hasContent(certId ?? '', domain.name)
+              const generatedDate = contentCache.getGeneratedDate(certId ?? '', domain.name)
+              const progress    = getDomainProgress(certId ?? '', domain.name)
+              const isFirst     = idx === 0 && !hasContent
+
+              return (
+                <div key={domain.name}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/${certId}/learn/${toDomainSlug(domain.name)}`)}
+                    className="card"
+                    style={{
+                      width: '100%', textAlign: 'left',
+                      padding: '1rem 1.25rem',
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between', gap: '1rem',
+                      cursor: 'pointer', transition: 'all 0.2s',
+                      border: isFirst ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = isFirst ? 'var(--accent)' : 'var(--border)' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{
+                        width: 40, height: 40, flexShrink: 0,
+                        background: hasContent ? 'var(--accent-dim)' : 'var(--bg-raised)',
+                        border: `1px solid ${hasContent ? 'var(--accent)' : 'var(--border)'}`,
+                        borderRadius: 10,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: hasContent ? 'var(--accent)' : 'var(--text-3)',
+                      }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
+                          {getDomainIcon(domain.name)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="label" style={{ marginBottom: 2 }}>
+                          MODULE {String(idx + 1).padStart(2, '0')} · {domain.percentage}% OF EXAM
+                        </p>
+                        <div style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text)' }}>
+                          {domain.name}
+                        </div>
+                        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+                          {domain.topics.length} topics · {domain.weight} questions
+                          {generatedDate && <span> · {generatedDate}</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      {progress > 0 && (
+                        <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>{progress}%</span>
+                      )}
+                      <span className="material-symbols-outlined" style={{ color: 'var(--text-3)', fontSize: 18 }}>
+                        chevron_right
+                      </span>
+                    </div>
+                  </button>
+
+                  {progress > 0 && (
+                    <div style={{ padding: '4px 1.25rem 0' }}>
+                      <div className="progress-bar" style={{ height: 3 }}>
+                        <div className="progress-fill" style={{ width: `${progress}%`, height: '100%' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Take exam CTA */}
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', padding: '0.875rem', fontSize: 14, marginBottom: '2rem' }}
+            onClick={() => navigate(`/${certId}/exam`)}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit_note</span>
+            Take {cert.name} practice exam
+          </button>
+
+          {/* Reset section */}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+            {resetMode === null && (
+              <div style={{ display: 'flex', gap: 16 }}>
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}
+                  onClick={() => setResetMode('all')}
+                >
+                  ↺ Reset study progress
+                </button>
+                <span style={{ color: 'var(--border)' }}>·</span>
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}
+                  onClick={() => setResetMode('content')}
+                >
+                  ↺ Regenerate AI content
+                </button>
               </div>
-            </div>
-          )}
+            )}
+
+            {resetMode === 'all' && (
+              <div className="card" style={{ padding: '1rem 1.25rem', border: '1px solid var(--error-dim)' }}>
+                <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Reset {cert.name} study progress?</p>
+                <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 12 }}>
+                  Clears AI content, topic read marks, and quiz scores. Exam history is kept.
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={() => setResetMode(null)}>Cancel</button>
+                  <button className="btn btn-danger" style={{ fontSize: 13 }} onClick={handleResetAll}>Yes, reset</button>
+                </div>
+              </div>
+            )}
+
+            {resetMode === 'content' && (
+              <div className="card" style={{ padding: '1rem 1.25rem' }}>
+                <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Regenerate {cert.name} AI content?</p>
+                <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 12 }}>
+                  Clears cached AI content only. Progress and exam history are kept.
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={() => setResetMode(null)}>Cancel</button>
+                  <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={handleResetContent}>Yes, regenerate</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </LearnLayout>
+      </AppShell>
+    </>
   )
 }

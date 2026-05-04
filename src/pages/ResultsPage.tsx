@@ -21,7 +21,6 @@ export default function ResultsPage() {
 
   useEffect(() => {
     if (!submitted || questions.length === 0) { navigate(`/${certId}/exam`, { replace: true }); return }
-
     if (savedRef.current) return
     savedRef.current = true
 
@@ -29,7 +28,7 @@ export default function ResultsPage() {
     const pct = Math.round((correct / questions.length) * 100)
     const domainScores = buildDomainScores(questions, answers)
 
-    const attempt = {
+    useHistoryStore.getState().addAttempt({
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
       mode: (mode ?? 'full') as 'full' | 'mini' | 'domain',
@@ -42,58 +41,70 @@ export default function ResultsPage() {
       wrongQuestions: buildWrongQuestions(),
       certId,
       certName: cert?.name ?? certId,
-    }
-
-    useHistoryStore.getState().addAttempt(attempt)
+    })
     tracker.examCompleted(certId, pct)
   }, [submitted, questions.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!submitted || questions.length === 0) return null
 
   const correct = questions.filter(q => answers[q.id] === q.correct).length
+  const pct = Math.round((correct / questions.length) * 100)
+  const passed = pct >= (cert?.passingScore ?? 70)
 
   return (
-    <div className="min-h-screen bg-navy">
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
       <TopNav />
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-        <div className="bg-ink rounded-2xl p-8 border border-white/10 text-center">
-          <h1 className="text-cream font-serif text-2xl mb-2">
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '5rem 1.25rem 3rem' }}>
+
+        {/* Score card */}
+        <div className="card" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: 6 }}>
             {cert?.icon} {cert?.name ?? certId} Results
           </h1>
-          <p className="text-mist text-sm mb-6">Pass: {cert?.passingScore ?? 70}%</p>
+          <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: '1.5rem' }}>
+            Pass mark: {cert?.passingScore ?? 70}%
+          </p>
           <ScoreRing score={correct} total={questions.length} />
+          <div style={{ marginTop: '1rem' }}>
+            <span className={`badge ${passed ? 'badge-success' : 'badge-error'}`} style={{ fontSize: 14, padding: '6px 16px' }}>
+              {passed ? '✓ PASS' : '✗ FAIL'}
+            </span>
+          </div>
         </div>
 
-        <div className="bg-ink rounded-2xl p-6 border border-white/10">
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <DomainBreakdown questions={questions} answers={answers} />
         </div>
 
-        <div className="bg-ink rounded-2xl p-6 border border-white/10">
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <StudyPlan questions={questions} answers={answers} />
         </div>
 
-        <div className="bg-ink rounded-2xl p-6 border border-white/10">
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <WrongAnswers questions={questions} answers={answers} />
         </div>
 
-        <div className="flex gap-3 pb-8">
+        <div style={{ display: 'flex', gap: 10, paddingBottom: '2rem', flexWrap: 'wrap' }}>
           <button
+            className="btn btn-primary"
+            style={{ flex: 1 }}
             onClick={() => { resetExam(); navigate(`/${certId}/exam`) }}
-            className="flex-1 bg-gold text-navy font-bold py-3 rounded-xl hover:bg-amber-400 transition-colors"
           >
             New Exam
           </button>
           <button
+            className="btn btn-secondary"
+            style={{ flex: 1 }}
             onClick={() => navigate(`/${certId}/history`)}
-            className="flex-1 bg-ink border border-white/20 text-mist py-3 rounded-xl hover:text-cream hover:border-white/40 transition-colors"
           >
             View History
           </button>
           <button
+            className="btn btn-ghost"
+            style={{ flex: 1 }}
             onClick={() => { resetExam(); navigate(`/${certId}/learn`) }}
-            className="flex-1 bg-ink border border-white/20 text-mist py-3 rounded-xl hover:text-cream hover:border-white/40 transition-colors"
           >
-            Back to Learn
+            Back to Study
           </button>
         </div>
       </div>

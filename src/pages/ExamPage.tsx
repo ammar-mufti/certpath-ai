@@ -27,9 +27,8 @@ function ActiveExam({ certId }: { certId: string }) {
     navigate(`/${certId}/results`, { replace: true })
   }, [submitExam, navigate, certId])
 
-  // Duration: use cert registry for full exam, fallback to standard timings
-  const fullDuration = cert ? cert.examDuration * 60 : 3 * 60 * 60
-  const miniDuration = 60 * 60
+  const fullDuration   = cert ? cert.examDuration * 60 : 3 * 60 * 60
+  const miniDuration   = 60 * 60
   const domainDuration = 30 * 60
   const duration = mode === 'full' ? fullDuration : mode === 'mini' ? miniDuration : domainDuration
 
@@ -52,16 +51,22 @@ function ActiveExam({ certId }: { certId: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-navy flex flex-col">
-      <div className="bg-ink border-b border-white/10 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
-        <div className="text-mist text-sm">
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        background: 'var(--bg-card)', borderBottom: '1px solid var(--border)',
+        padding: '12px 20px', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40,
+      }}>
+        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
           {questions.length}Q · {mode === 'full' ? 'Full Exam' : mode === 'mini' ? 'Mini Drill' : 'Domain Drill'}
         </div>
         <TimerDisplay formatted={formatted} timerColor={timerColor} timerPulse={timerPulse} />
-        <div className="text-mist text-sm">{Object.keys(answers).length}/{questions.length}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
+          {Object.keys(answers).length}/{questions.length}
+        </div>
       </div>
 
-      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6">
+      <div style={{ flex: 1, maxWidth: 720, margin: '0 auto', width: '100%', padding: '1.5rem 1.25rem' }}>
         <QuestionCard
           question={question}
           selectedAnswer={answers[question.id]}
@@ -71,13 +76,11 @@ function ActiveExam({ certId }: { certId: string }) {
         />
       </div>
 
-      <div className="sticky bottom-0 z-40">
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 40 }}>
         <NavigationBar onSubmit={() => setShowModal(true)} />
       </div>
 
-      {showModal && (
-        <SubmitModal onConfirm={confirm} onCancel={() => setShowModal(false)} />
-      )}
+      {showModal && <SubmitModal onConfirm={confirm} onCancel={() => setShowModal(false)} />}
     </div>
   )
 }
@@ -98,7 +101,12 @@ export default function ExamPage({ certId }: Props) {
 
   return (
     <Routes>
-      <Route index element={<><TopNav /><div className="bg-navy min-h-screen"><ConfigScreen certId={certId} /></div></>} />
+      <Route index element={
+        <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
+          <TopNav />
+          <ConfigScreen certId={certId} />
+        </div>
+      } />
       <Route path="loading" element={<LoadingScreen certId={certId} />} />
       <Route path="question" element={<ActiveExam certId={certId} />} />
     </Routes>
