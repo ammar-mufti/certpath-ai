@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import type { AuthUser } from '../store/authStore'
 import { parseJwt } from '../services/auth'
+import { useThemeContext } from '../context/ThemeContext'
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
-console.log('Worker URL:', WORKER_URL)
 
 function GoogleIcon() {
   return (
@@ -26,24 +26,11 @@ function GitHubIcon() {
   )
 }
 
-function EyeIcon({ open }: { open: boolean }) {
-  return open ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
-    </svg>
-  )
-}
-
 export default function LoginPage() {
   const [params] = useSearchParams()
   const { setAuth, user } = useAuthStore()
   const navigate = useNavigate()
+  const { isDark, toggle } = useThemeContext()
 
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
@@ -82,44 +69,24 @@ export default function LoginPage() {
 
   async function handleEmailAuth() {
     setError(null)
-
-    if (!email || !password) {
-      setError('Email and password are required')
-      return
-    }
+    if (!email || !password) { setError('Email and password are required'); return }
     if (mode === 'register') {
-      if (!name || name.trim().length < 2) {
-        setError('Please enter your full name (at least 2 characters)')
-        return
-      }
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters')
-        return
-      }
-      if (!/\d/.test(password)) {
-        setError('Password must contain at least one number')
-        return
-      }
+      if (!name || name.trim().length < 2) { setError('Please enter your full name (at least 2 characters)'); return }
+      if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+      if (!/\d/.test(password)) { setError('Password must contain at least one number'); return }
     }
 
     setLoading(true)
     try {
       const endpoint = mode === 'register' ? '/auth/email/register' : '/auth/email/login'
       const body = mode === 'register' ? { email, password, name } : { email, password }
-
       const res = await fetch(`${WORKER_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-
       const data = await res.json() as { token?: string; user?: AuthUser; error?: string }
-
-      if (!res.ok) {
-        setError(data.error ?? 'Authentication failed')
-        return
-      }
-
+      if (!res.ok) { setError(data.error ?? 'Authentication failed'); return }
       if (data.token && data.user) {
         setAuth(data.user, data.token)
         navigate('/dashboard', { replace: true })
@@ -131,153 +98,182 @@ export default function LoginPage() {
     }
   }
 
-  function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') handleEmailAuth()
-  }
-
-  function switchMode() {
-    setMode(m => m === 'login' ? 'register' : 'login')
-    setError(null)
-  }
-
   return (
-    <div className="min-h-dvh bg-navy flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      {/* Ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gold/[0.03] rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-dvh bg-background flex flex-col">
 
-      <div className="w-full max-w-sm relative">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-gold font-serif text-3xl mb-1.5 tracking-tight">CertPath AI</div>
-          <p className="text-mist/60 text-sm">
-            {mode === 'login' ? 'Sign in to continue studying' : 'Create your free account'}
+      {/* Nav */}
+      <header className="sticky top-0 z-50 bg-surface-container/90 backdrop-blur-md border-b border-outline-variant">
+        <div className="max-w-7xl mx-auto px-5 h-14 flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="text-xl font-bold font-serif text-primary hover:opacity-80 transition-opacity"
+          >
+            CertPath AI
+          </button>
+          <button
+            onClick={toggle}
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-all text-on-surface-variant hover:text-primary"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <span className="material-symbols-outlined">{isDark ? 'light_mode' : 'dark_mode'}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="flex-1 flex items-center justify-center px-5 py-12 relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/[0.06] rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-sm relative">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 mb-4">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: '24px' }}>school</span>
+            </div>
+            <h1 className="font-serif text-h2 text-on-surface mb-1">
+              {mode === 'login' ? 'Welcome back' : 'Create account'}
+            </h1>
+            <p className="text-on-surface-variant text-sm">
+              {mode === 'login' ? 'Sign in to continue studying' : 'Free forever — no credit card needed'}
+            </p>
+          </div>
+
+          <div className="bg-surface-container rounded-2xl p-6 border border-outline-variant shadow-ink">
+
+            {/* OAuth buttons */}
+            <div className="space-y-2.5 mb-5">
+              <button
+                onClick={() => { window.location.href = `${WORKER_URL}/auth/google/login` }}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 text-sm active:scale-[0.99]"
+              >
+                <GoogleIcon />
+                Continue with Google
+              </button>
+
+              <button
+                onClick={() => { window.location.href = `${WORKER_URL}/auth/github/login` }}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl bg-[#24292e] text-white font-medium hover:bg-[#1c2024] transition-all duration-200 text-sm active:scale-[0.99]"
+              >
+                <GitHubIcon />
+                Continue with GitHub
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-outline-variant" />
+              <span className="text-on-surface-variant/50 text-xs">or continue with email</span>
+              <div className="flex-1 h-px bg-outline-variant" />
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="bg-error-container/30 border border-error/30 rounded-xl p-3 mb-4 flex items-start gap-2">
+                <span className="material-symbols-outlined text-error flex-shrink-0" style={{ fontSize: '16px', marginTop: '1px' }}>error</span>
+                <p className="text-error text-sm leading-snug">{error}</p>
+              </div>
+            )}
+
+            {/* Email form */}
+            <div className="space-y-3" onKeyDown={e => e.key === 'Enter' && handleEmailAuth()}>
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-on-surface-variant text-xs font-medium mb-1.5">Full name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Your name"
+                    autoComplete="name"
+                    className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-3.5 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary/60 placeholder-on-surface-variant/40 transition-colors"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-on-surface-variant text-xs font-medium mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-3.5 py-2.5 text-on-surface text-sm focus:outline-none focus:border-primary/60 placeholder-on-surface-variant/40 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-on-surface-variant text-xs font-medium mb-1.5">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder={mode === 'register' ? 'Min 8 chars, include a number' : '••••••••'}
+                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                    className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-3.5 py-2.5 pr-11 text-on-surface text-sm focus:outline-none focus:border-primary/60 placeholder-on-surface-variant/40 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 hover:text-on-surface-variant transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                      {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleEmailAuth}
+                disabled={loading}
+                className="w-full bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:brightness-110 disabled:opacity-50 transition-all duration-200 text-sm flex items-center justify-center gap-2 mt-1 active:scale-[0.99] shadow-primary-btn"
+              >
+                {loading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
+                    {mode === 'register' ? 'Creating account…' : 'Signing in…'}
+                  </>
+                ) : (
+                  mode === 'login' ? 'Sign in' : 'Create account'
+                )}
+              </button>
+            </div>
+
+            {/* Mode toggle */}
+            <div className="text-center mt-4 pt-4 border-t border-outline-variant">
+              {mode === 'login' ? (
+                <p className="text-on-surface-variant text-xs">
+                  No account?{' '}
+                  <button
+                    onClick={() => { setMode('register'); setError(null) }}
+                    className="text-primary hover:opacity-80 transition-opacity font-semibold"
+                  >
+                    Create one free
+                  </button>
+                </p>
+              ) : (
+                <p className="text-on-surface-variant text-xs">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => { setMode('login'); setError(null) }}
+                    className="text-primary hover:opacity-80 transition-opacity font-semibold"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+
+          <p className="text-on-surface-variant/40 text-xs text-center mt-5">
+            Secure · No spam · Free forever
           </p>
         </div>
-
-        <div className="bg-ink/80 backdrop-blur-sm rounded-2xl p-7 border border-white/[0.08] shadow-ink">
-          {/* OAuth buttons */}
-          <div className="space-y-2.5 mb-6">
-            <button
-              onClick={() => { window.location.href = `${WORKER_URL}/auth/google/login` }}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl bg-white border border-gray-100 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 text-sm active:scale-[0.99]"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-
-            <button
-              onClick={() => { window.location.href = `${WORKER_URL}/auth/github/login` }}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl bg-[#24292e] text-white font-medium hover:bg-[#1c2024] transition-all duration-200 text-sm active:scale-[0.99]"
-            >
-              <GitHubIcon />
-              Continue with GitHub
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-white/[0.07]" />
-            <span className="text-mist/40 text-xs">or</span>
-            <div className="flex-1 h-px bg-white/[0.07]" />
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="bg-fail/8 border border-fail/20 rounded-xl p-3 mb-4">
-              <p className="text-fail/90 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Email form */}
-          <div className="space-y-3" onKeyDown={handleKey}>
-            {mode === 'register' && (
-              <div>
-                <label className="block text-mist/60 text-xs mb-1.5 font-medium">Full name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Your name"
-                  autoComplete="name"
-                  className="w-full bg-navy/80 border border-white/[0.12] rounded-xl px-3 py-2.5 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder-mist/25 transition-colors"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-mist/60 text-xs mb-1.5 font-medium">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                className="w-full bg-navy/80 border border-white/[0.12] rounded-xl px-3 py-2.5 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder-mist/25 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-mist/60 text-xs mb-1.5 font-medium">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder={mode === 'register' ? 'Min 8 chars, include a number' : '••••••••'}
-                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                  className="w-full bg-navy/80 border border-white/[0.12] rounded-xl px-3 py-2.5 pr-10 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder-mist/25 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-mist/40 hover:text-mist/70 transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <EyeIcon open={showPassword} />
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={handleEmailAuth}
-              disabled={loading}
-              className="w-full bg-gold text-navy font-bold py-2.5 rounded-xl hover:brightness-110 disabled:opacity-50 transition-all duration-200 text-sm flex items-center justify-center gap-2 mt-1 active:scale-[0.99]"
-            >
-              {loading ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-navy/30 border-t-navy rounded-full animate-spin" />
-                  {mode === 'register' ? 'Creating account…' : 'Signing in…'}
-                </>
-              ) : (
-                mode === 'login' ? 'Sign in' : 'Create account'
-              )}
-            </button>
-          </div>
-
-          {/* Mode toggle */}
-          <div className="text-center mt-4">
-            {mode === 'login' ? (
-              <p className="text-mist/40 text-xs">
-                No account?{' '}
-                <button onClick={switchMode} className="text-gold/80 hover:text-gold transition-colors font-medium">
-                  Create one
-                </button>
-              </p>
-            ) : (
-              <p className="text-mist/40 text-xs">
-                Already have an account?{' '}
-                <button onClick={switchMode} className="text-gold/80 hover:text-gold transition-colors font-medium">
-                  Sign in
-                </button>
-              </p>
-            )}
-          </div>
-        </div>
-
-        <p className="text-mist/25 text-xs text-center mt-5">
-          Secure · No spam · Free
-        </p>
-      </div>
+      </main>
     </div>
   )
 }

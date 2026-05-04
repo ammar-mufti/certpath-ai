@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { useTheme } from '../hooks/useTheme'
+import { useThemeContext } from '../context/ThemeContext'
 import { AVAILABLE_CERTS, COMING_SOON_CERTS } from '../data/certifications'
 import type { Certification } from '../data/certifications'
 
@@ -87,7 +87,7 @@ function ComingSoonCard({ cert }: { cert: Certification }) {
 export default function LandingPage() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
-  const { isDark, toggle } = useTheme()
+  const { isDark, toggle } = useThemeContext()
 
   function handleStart(certId: string) {
     navigate(user ? `/${certId}/learn` : '/login')

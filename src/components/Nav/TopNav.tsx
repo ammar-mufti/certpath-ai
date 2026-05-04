@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import type { AuthUser } from '../../store/authStore'
 import { useHistoryStore } from '../../store/historyStore'
-import { useTheme } from '../../hooks/useTheme'
+import { useThemeContext } from '../../context/ThemeContext'
 import { AVAILABLE_CERTS, COMING_SOON_CERTS, getCert } from '../../data/certifications'
 
 function UserAvatar({ user, onClick }: { user: AuthUser; onClick: () => void }) {
@@ -33,7 +33,7 @@ export default function TopNav() {
   const navigate = useNavigate()
   const params = useParams<{ certId?: string }>()
   const attemptCount = useHistoryStore(s => s.attempts.length)
-  const { isDark, toggle } = useTheme()
+  const { isDark, toggle } = useThemeContext()
 
   const certIdFromPath = params.certId ?? location.pathname.split('/').find(seg =>
     AVAILABLE_CERTS.some(c => c.id === seg) || COMING_SOON_CERTS.some(c => c.id === seg)

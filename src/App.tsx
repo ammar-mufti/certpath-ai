@@ -4,7 +4,7 @@ import { useAuthStore } from './store/authStore'
 import { useHistoryStore } from './store/historyStore'
 import { useLearnStore } from './store/learnStore'
 import { useTutorStore } from './store/tutorStore'
-import { useTheme } from './hooks/useTheme'
+import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import AdminRoute from './components/Admin/AdminRoute'
 import LoginPage from './pages/LoginPage'
@@ -154,11 +154,6 @@ function MobileBottomNav() {
   )
 }
 
-function ThemeInitializer() {
-  useTheme()
-  return null
-}
-
 export default function App() {
   const init = useAuthStore(s => s.init)
   const user = useAuthStore(s => s.user)
@@ -186,8 +181,8 @@ export default function App() {
   }, [])
 
   return (
+    <ThemeProvider>
     <BrowserRouter basename="/certpath-ai">
-      <ThemeInitializer />
       <AnnouncementBanner
         banner={bannerDismissed ? null : (health?.banner ?? null)}
         onDismiss={() => setBannerDismissed(true)}
@@ -225,5 +220,6 @@ export default function App() {
       <MobileBottomNav />
       <TutorChatWrapper />
     </BrowserRouter>
+    </ThemeProvider>
   )
 }
