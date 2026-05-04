@@ -58,7 +58,7 @@ export default function LoginPage() {
           window.history.replaceState({}, '', window.location.pathname)
         }
       } catch {
-        setError('Sign-in failed — please try again')
+        setTimeout(() => setError('Sign-in failed — please try again'), 0)
       }
     }
   }, [params, setAuth])
