@@ -61,7 +61,7 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
     <div
       id={`topic-${topicSlug}`}
       ref={onRef}
-      style={{ marginBottom: 12 }}
+      style={{ marginBottom: 12, scrollMarginTop: '80px' }}
     >
       {/* Topic header button */}
       <button

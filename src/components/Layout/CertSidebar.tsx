@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { getCert } from '../../data/certifications'
 import { useLearnStore } from '../../store/learnStore'
@@ -5,6 +6,7 @@ import { toDomainSlug } from '../../utils/domainUtils'
 
 interface CertSidebarProps {
   onOpenTutor?: () => void
+  activeTopic?: string | null
 }
 
 interface NavItemProps {
@@ -58,7 +60,7 @@ function NavItem({ icon, label, path, action, danger, active }: NavItemProps) {
   )
 }
 
-export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
+export function CertSidebar({ onOpenTutor, activeTopic }: CertSidebarProps) {
   const { certId } = useParams<{ certId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -67,6 +69,14 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
 
   const isActive = (path: string) => location.pathname.startsWith(path)
   const domainSlug = location.pathname.split('/learn/')[1]?.split('/')[0] ?? ''
+
+  const [userToggledDomain, setUserToggledDomain] = useState<string | null>(null)
+
+  const expandedDomain = userToggledDomain ?? domainSlug ?? null
+
+  function toggleDomain(slug: string) {
+    setUserToggledDomain(prev => prev === slug ? null : slug)
+  }
 
   return (
     <>
@@ -138,12 +148,16 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
             const progress = getDomainProgress(certId ?? '', d.name)
             const slug = toDomainSlug(d.name)
             const active = domainSlug === slug
+            const expanded = expandedDomain === slug
             const readTopics = getReadTopics(certId ?? '', d.name)
 
             return (
               <div key={d.name}>
                 <button
-                  onClick={() => navigate(`/${certId}/learn/${slug}`)}
+                  onClick={() => {
+                    navigate(`/${certId}/learn/${slug}`)
+                    toggleDomain(slug)
+                  }}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -166,13 +180,23 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                       fontSize: 12, fontWeight: 500,
                       color: active ? 'var(--accent)' : 'var(--text-2)',
                       overflow: 'hidden', textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap', maxWidth: 130,
+                      whiteSpace: 'nowrap', maxWidth: 110,
                     }}>
                       {d.name}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>
-                      {d.percentage}%
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        {d.percentage}%
+                      </span>
+                      <span className="material-symbols-outlined" style={{
+                        fontSize: 16,
+                        color: 'var(--text-3)',
+                        transform: expanded ? 'rotate(90deg)' : 'rotate(0)',
+                        transition: 'transform 0.2s',
+                      }}>
+                        chevron_right
+                      </span>
+                    </div>
                   </div>
                   <div style={{
                     height: 3, background: 'var(--border)',
@@ -187,8 +211,8 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                   </div>
                 </button>
 
-                {/* Topic list when domain is active */}
-                {active && d.topics.length > 0 && (
+                {/* Topic list when domain is expanded */}
+                {expanded && d.topics.length > 0 && (
                   <div style={{
                     marginLeft: 12, paddingLeft: 10,
                     borderLeft: '2px solid var(--accent-dim)',
@@ -197,15 +221,22 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                   }}>
                     {d.topics.map(topic => {
                       const isRead = readTopics.includes(topic)
+                      const isActiveTopic = activeTopic === topic
                       return (
                         <button
                           key={topic}
                           style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
+                            background: isActiveTopic ? 'var(--accent-dim)' : 'none',
+                            border: 'none',
+                            borderLeft: isActiveTopic ? '2px solid var(--accent)' : '2px solid transparent',
+                            cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '3px 0', fontSize: 11,
-                            color: isRead ? 'var(--text-3)' : 'var(--text-2)',
+                            padding: '3px 0 3px 4px', fontSize: 11,
+                            color: isActiveTopic ? 'var(--accent)' : isRead ? 'var(--text-3)' : 'var(--text-2)',
+                            fontWeight: isActiveTopic ? 600 : 400,
                             textAlign: 'left',
+                            borderRadius: '0 4px 4px 0',
+                            transition: 'all 0.15s',
                           }}
                           onClick={() => {
                             const targetPath = `/${certId}/learn/${slug}`
@@ -219,11 +250,11 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                         >
                           <span style={{
                             width: 14, flexShrink: 0, textAlign: 'center',
-                            color: isRead ? 'var(--success)' : 'var(--border)', fontSize: 10,
+                            color: isActiveTopic ? 'var(--accent)' : isRead ? 'var(--success)' : 'var(--border)', fontSize: 10,
                           }}>
-                            {isRead ? '✓' : '○'}
+                            {isActiveTopic ? '●' : isRead ? '✓' : '○'}
                           </span>
-                          <span style={{ textDecoration: isRead ? 'line-through' : 'none', opacity: isRead ? 0.6 : 1 }}>
+                          <span style={{ textDecoration: isRead && !isActiveTopic ? 'line-through' : 'none', opacity: isRead && !isActiveTopic ? 0.6 : 1 }}>
                             {topic}
                           </span>
                         </button>

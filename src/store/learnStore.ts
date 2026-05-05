@@ -30,6 +30,7 @@ interface DomainProgress {
   topicsRead: string[]
   flashcardsKnown: number[]
   quizScore: number | null
+  completedSteps: Record<string, number[]>
 }
 
 // Progress keyed by `${certId}::${domain}`
@@ -44,6 +45,9 @@ interface LearnState {
   markFlashcardKnown: (domain: string, index: number) => void
   setQuizScore: (domain: string, score: number) => void
   getDomainProgress: (certId: string, domain: string) => number
+  markStepComplete: (certId: string, domain: string, topic: string, stepIndex: number) => void
+  getCompletedSteps: (certId: string, domain: string, topic: string) => number[]
+  resetSteps: (certId: string, domain: string, topic: string) => void
   resetProgress: () => void
   loadForUser: () => void
 }
@@ -119,7 +123,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     const key = progressKey(certId, domain)
     set(state => {
       const p = { ...state.progress }
-      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
+      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null, completedSteps: {} }
       if (!p[key].topicsRead.includes(topic)) {
         p[key] = { ...p[key], topicsRead: [...p[key].topicsRead, topic] }
       }
@@ -131,7 +135,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   markFlashcardKnown(domain, index) {
     set(state => {
       const p = { ...state.progress }
-      if (!p[domain]) p[domain] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
+      if (!p[domain]) p[domain] = { topicsRead: [], flashcardsKnown: [], quizScore: null, completedSteps: {} }
       const known = p[domain].flashcardsKnown
       if (!known.includes(index)) {
         p[domain] = { ...p[domain], flashcardsKnown: [...known, index] }
@@ -144,8 +148,46 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   setQuizScore(domain, score) {
     set(state => {
       const p = { ...state.progress }
-      if (!p[domain]) p[domain] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
+      if (!p[domain]) p[domain] = { topicsRead: [], flashcardsKnown: [], quizScore: null, completedSteps: {} }
       p[domain] = { ...p[domain], quizScore: score }
+      saveProgress(p)
+      return { progress: p }
+    })
+  },
+
+  markStepComplete(certId, domain, topic, stepIndex) {
+    const key = progressKey(certId, domain)
+    set(state => {
+      const p = { ...state.progress }
+      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null, completedSteps: {} }
+      if (!p[key].completedSteps[topic]) p[key].completedSteps[topic] = []
+      if (!p[key].completedSteps[topic].includes(stepIndex)) {
+        p[key] = {
+          ...p[key],
+          completedSteps: {
+            ...p[key].completedSteps,
+            [topic]: [...p[key].completedSteps[topic], stepIndex],
+          },
+        }
+      }
+      saveProgress(p)
+      return { progress: p }
+    })
+  },
+
+  getCompletedSteps(certId, domain, topic) {
+    const key = progressKey(certId, domain)
+    return get().progress[key]?.completedSteps[topic] ?? []
+  },
+
+  resetSteps(certId, domain, topic) {
+    const key = progressKey(certId, domain)
+    set(state => {
+      const p = { ...state.progress }
+      if (p[key]?.completedSteps) {
+        delete p[key].completedSteps[topic]
+        p[key] = { ...p[key], completedSteps: { ...p[key].completedSteps } }
+      }
       saveProgress(p)
       return { progress: p }
     })

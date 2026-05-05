@@ -9,6 +9,7 @@ interface AppShellProps {
 
 export function AppShell({ children, sidebar }: AppShellProps) {
   const [tutorOpen, setTutorOpen] = useState(false)
+  const [activeTopic, setActiveTopic] = useState<string | null>(null)
   const { certId } = useParams<{ certId: string }>()
   const location = useLocation()
 
@@ -19,8 +20,9 @@ export function AppShell({ children, sidebar }: AppShellProps) {
       : `User is on the ${certId?.toUpperCase()} study guide`
 
   const sidebarWithTutor = sidebar && React.isValidElement(sidebar)
-    ? React.cloneElement(sidebar as React.ReactElement<{ onOpenTutor?: () => void }>, {
+    ? React.cloneElement(sidebar as React.ReactElement<{ onOpenTutor?: () => void; activeTopic?: string | null }>, {
         onOpenTutor: () => setTutorOpen(true),
+        activeTopic,
       })
     : sidebar
 
@@ -28,6 +30,12 @@ export function AppShell({ children, sidebar }: AppShellProps) {
     const handler = () => setTutorOpen(true)
     window.addEventListener('certpath-open-tutor', handler)
     return () => window.removeEventListener('certpath-open-tutor', handler)
+  }, [])
+
+  useEffect(() => {
+    const topicHandler = (e: CustomEvent) => setActiveTopic(e.detail.topic)
+    window.addEventListener('certpath-active-topic-changed', topicHandler as EventListener)
+    return () => window.removeEventListener('certpath-active-topic-changed', topicHandler as EventListener)
   }, [])
 
   return (

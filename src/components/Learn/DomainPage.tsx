@@ -91,10 +91,6 @@ export default function DomainPage({ certId }: Props) {
   const [showRegenPanel,   setShowRegenPanel]   = useState(false)
 
   useEffect(() => {
-    document.getElementById('main-scroll')?.scrollTo({ top: 0 })
-  }, [])
-
-  useEffect(() => {
     const sidebarNav = sessionStorage.getItem('certpath_sidebar_expand_topic')
     if (sidebarNav) {
       try {
@@ -145,6 +141,8 @@ export default function DomainPage({ certId }: Props) {
   }, [s2.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleTopicExpand(topic: string) {
+    sessionStorage.setItem('certpath_active_topic', JSON.stringify({ certId, domain, topic }))
+    window.dispatchEvent(new CustomEvent('certpath-active-topic-changed', { detail: { topic } }))
     setTimeout(() => {
       const slug = toTopicSlug(topic)
       const el = document.getElementById(`topic-${slug}`)
@@ -159,10 +157,14 @@ export default function DomainPage({ certId }: Props) {
   }, [autoExpandTopic, s2.data])
 
   useEffect(() => {
-    const handler = (e: CustomEvent) => { handleTopicExpand(e.detail.topic) }
+    const handler = (e: CustomEvent) => {
+      sessionStorage.setItem('certpath_active_topic', JSON.stringify({ certId, domain, topic: e.detail.topic }))
+      window.dispatchEvent(new CustomEvent('certpath-active-topic-changed', { detail: { topic: e.detail.topic } }))
+      handleTopicExpand(e.detail.topic)
+    }
     window.addEventListener('expand-topic', handler as EventListener)
     return () => window.removeEventListener('expand-topic', handler as EventListener)
-  }, [s2.data])
+  }, [s2.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!domain || !certDomain) return null
 
