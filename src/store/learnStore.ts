@@ -30,7 +30,12 @@ interface DomainProgress {
   topicsRead: string[]
   flashcardsKnown: number[]
   quizScore: number | null
-  completedSteps: Record<string, number[]>
+  completedSteps?: Record<string, number[]>
+}
+
+function ensureCompletedSteps(p: DomainProgress): DomainProgress {
+  if (!p.completedSteps) return { ...p, completedSteps: {} }
+  return p
 }
 
 // Progress keyed by `${certId}::${domain}`
@@ -123,7 +128,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     const key = progressKey(certId, domain)
     set(state => {
       const p = { ...state.progress }
-      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null, completedSteps: {} }
+      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
       if (!p[key].topicsRead.includes(topic)) {
         p[key] = { ...p[key], topicsRead: [...p[key].topicsRead, topic] }
       }
@@ -159,14 +164,15 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     const key = progressKey(certId, domain)
     set(state => {
       const p = { ...state.progress }
-      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null, completedSteps: {} }
-      if (!p[key].completedSteps[topic]) p[key].completedSteps[topic] = []
-      if (!p[key].completedSteps[topic].includes(stepIndex)) {
+      if (!p[key]) p[key] = { topicsRead: [], flashcardsKnown: [], quizScore: null }
+      p[key] = ensureCompletedSteps(p[key])
+      if (!p[key].completedSteps![topic]) p[key].completedSteps![topic] = []
+      if (!p[key].completedSteps![topic].includes(stepIndex)) {
         p[key] = {
           ...p[key],
           completedSteps: {
             ...p[key].completedSteps,
-            [topic]: [...p[key].completedSteps[topic], stepIndex],
+            [topic]: [...p[key].completedSteps![topic], stepIndex],
           },
         }
       }
@@ -185,7 +191,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     set(state => {
       const p = { ...state.progress }
       if (p[key]?.completedSteps) {
-        delete p[key].completedSteps[topic]
+        delete p[key].completedSteps![topic]
         p[key] = { ...p[key], completedSteps: { ...p[key].completedSteps } }
       }
       saveProgress(p)
