@@ -146,11 +146,25 @@ export default function DomainPage({ certId }: Props) {
 
   function handleTopicExpand(topic: string) {
     setTimeout(() => {
+      const scrollContainer = document.getElementById('main-scroll')
+      if (!scrollContainer) return
       const slug = toTopicSlug(topic)
       const el = document.getElementById(`topic-${slug}`)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      else document.getElementById('key-concepts')?.scrollIntoView({ behavior: 'smooth' })
-    }, 150)
+      if (el) {
+        const elRect = el.getBoundingClientRect()
+        const containerRect = scrollContainer.getBoundingClientRect()
+        const scrollTarget = scrollContainer.scrollTop + (elRect.top - containerRect.top) - 16
+        scrollContainer.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+      } else {
+        const keyConcepts = document.getElementById('key-concepts')
+        if (keyConcepts) {
+          const elRect = keyConcepts.getBoundingClientRect()
+          const containerRect = scrollContainer.getBoundingClientRect()
+          const scrollTarget = scrollContainer.scrollTop + (elRect.top - containerRect.top) - 16
+          scrollContainer.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+        }
+      }
+    }, 350)
   }
 
   useEffect(() => {

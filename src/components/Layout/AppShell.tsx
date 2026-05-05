@@ -56,10 +56,12 @@ export function AppShell({ children, sidebar }: AppShellProps) {
         </aside>
       )}
 
-      <main style={{
+      <main id="main-scroll" style={{
         flex: 1,
         marginLeft: sidebar ? 220 : 0,
         padding: '2rem',
+        overflowY: 'auto',
+        height: 'calc(100dvh - 56px)',
       }}>
         {children}
       </main>
