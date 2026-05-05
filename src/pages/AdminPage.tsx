@@ -56,26 +56,38 @@ function formatDate(iso: string | null) {
 }
 
 function ProviderBadge({ provider }: { provider: string }) {
-  const styles: Record<string, string> = {
-    google: 'bg-blue-500/15 text-blue-400',
-    github: 'bg-surface-container-highest text-on-surface-variant',
-    email:  'bg-primary/15 text-primary',
+  const styles: Record<string, { bg: string; color: string }> = {
+    google: { bg: 'rgba(66,133,244,0.15)', color: '#4285F4' },
+    github: { bg: 'var(--bg-raised)', color: 'var(--text-2)' },
+    email:  { bg: 'var(--accent-dim)', color: 'var(--accent)' },
   }
+  const s = styles[provider] ?? styles.email
   return (
-    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${styles[provider] ?? styles.email}`}>
+    <span style={{
+      fontSize: 10,
+      fontWeight: 600,
+      letterSpacing: '0.05em',
+      textTransform: 'uppercase',
+      padding: '2px 8px',
+      borderRadius: 9999,
+      background: s.bg,
+      color: s.color,
+    }}>
       {provider}
     </span>
   )
 }
 
-function StatCard({ label, value, icon, color = 'text-primary' }: { label: string; value: string | number; icon: string; color?: string }) {
+function StatCard({ label, value, icon, accent = 'var(--accent)' }: { label: string; value: string | number; icon: string; accent?: string }) {
   return (
-    <div className="bg-surface-container rounded-xl p-5 border border-outline-variant">
-      <div className="flex items-center justify-between mb-3">
-        <span className={`material-symbols-outlined ${color}`}>{icon}</span>
-        <span className="font-label text-on-surface-variant text-[10px]">{label}</span>
+    <div className="card" style={{ padding: '1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span className="material-symbols-outlined" style={{ color: accent, fontSize: 20 }}>{icon}</span>
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{label}</span>
       </div>
-      <p className={`font-serif text-2xl font-bold tabular ${color}`}>{value}</p>
+      <p style={{ fontFamily: 'Noto Serif, serif', fontSize: '1.5rem', fontWeight: 700, color: accent }} className="tabular">
+        {value}
+      </p>
     </div>
   )
 }
@@ -83,71 +95,110 @@ function StatCard({ label, value, icon, color = 'text-primary' }: { label: strin
 function UserModal({ user, onClose, onDelete }: { user: AdminUser; onClose: () => void; onDelete: (email: string) => void }) {
   const [confirming, setConfirming] = useState(false)
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-surface-container border border-outline-variant rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg flex-shrink-0">
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 100, padding: '0 16px',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="card"
+        style={{ width: '100%', maxWidth: 440, padding: '1.5rem' }}
+      >
+        {/* User header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'var(--accent-dim)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--accent)', fontWeight: 700, fontSize: 18,
+            flexShrink: 0, fontFamily: 'Noto Serif, serif',
+          }}>
             {user.name.charAt(0).toUpperCase()}
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-on-surface font-semibold font-serif">{user.name}</h3>
-            <p className="text-on-surface-variant text-sm truncate">{user.email}</p>
-            <div className="flex items-center gap-2 mt-1">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)' }}>{user.name}</h3>
+            <p style={{ color: 'var(--text-2)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <ProviderBadge provider={user.provider} />
-              <span className="text-on-surface-variant/50 text-xs">Joined {formatDate(user.createdAt)}</span>
+              <span style={{ color: 'var(--text-3)', fontSize: 12 }}>Joined {formatDate(user.createdAt)}</span>
             </div>
           </div>
-          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
-            <span className="material-symbols-outlined text-base">close</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
           </button>
         </div>
 
-        <div className="bg-surface-container-high rounded-xl p-4 space-y-2">
-          <p className="font-label text-on-surface-variant text-[10px]">ACTIVITY</p>
-          <div className="grid grid-cols-2 gap-3 text-sm">
+        {/* Activity */}
+        <div style={{ background: 'var(--bg-raised)', borderRadius: 12, padding: '1rem', marginBottom: 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>Activity</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <p className="text-on-surface-variant/60 text-xs">Last active</p>
-              <p className="text-on-surface">{formatDate(user.lastActive)}</p>
+              <p style={{ color: 'var(--text-3)', fontSize: 11 }}>Last active</p>
+              <p style={{ color: 'var(--text)', fontSize: 13 }}>{formatDate(user.lastActive)}</p>
             </div>
             <div>
-              <p className="text-on-surface-variant/60 text-xs">Exams completed</p>
-              <p className="text-on-surface tabular">{user.examsCompleted}</p>
+              <p style={{ color: 'var(--text-3)', fontSize: 11 }}>Exams completed</p>
+              <p style={{ color: 'var(--text)' }} className="tabular">{user.examsCompleted}</p>
             </div>
           </div>
         </div>
 
+        {/* Certs studied */}
         {user.certsStudied.length > 0 && (
-          <div>
-            <p className="font-label text-on-surface-variant text-[10px] mb-2">CERTIFICATIONS STUDIED</p>
-            <div className="flex flex-wrap gap-2">
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>Certifications studied</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.certsStudied.map(c => (
-                <span key={c} className="px-2 py-0.5 rounded-lg bg-primary/15 text-primary text-xs font-semibold">{c.toUpperCase()}</span>
+                <span key={c} style={{
+                  padding: '4px 10px', borderRadius: 8,
+                  background: 'var(--accent-dim)', color: 'var(--accent)',
+                  fontSize: 12, fontWeight: 600,
+                }}>
+                  {c.toUpperCase()}
+                </span>
               ))}
             </div>
           </div>
         )}
 
+        {/* Last exam */}
         {user.lastExamCert && (
-          <p className="text-sm text-on-surface-variant">
-            Last exam: <span className="text-on-surface font-medium">{user.lastExamCert.toUpperCase()}</span>
+          <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 16 }}>
+            Last exam: <span style={{ color: 'var(--text)', fontWeight: 500 }}>{user.lastExamCert.toUpperCase()}</span>
             {user.lastExamScore !== null && (
-              <> &middot; <span className={user.lastExamScore >= 70 ? 'text-primary' : 'text-error'}>{user.lastExamScore}% {user.lastExamScore >= 70 ? 'PASS' : 'FAIL'}</span></>
+              <> · <span style={{ color: user.lastExamScore >= 70 ? 'var(--success)' : 'var(--error)', fontWeight: 600 }}>{user.lastExamScore}% {user.lastExamScore >= 70 ? 'PASS' : 'FAIL'}</span></>
             )}
           </p>
         )}
 
+        {/* Delete confirmation */}
         {confirming ? (
-          <div className="bg-error-container/20 border border-error/30 rounded-xl p-3 space-y-3">
-            <p className="text-error text-sm">Delete {user.name}&apos;s account? This cannot be undone.</p>
-            <div className="flex gap-2">
-              <button onClick={() => setConfirming(false)} className="flex-1 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:text-on-surface transition-colors">Cancel</button>
-              <button onClick={() => onDelete(user.email)} className="flex-1 py-2 rounded-lg bg-error-container text-on-error text-sm font-semibold hover:opacity-90 transition-opacity">Delete</button>
+          <div style={{
+            background: 'var(--error-dim)', border: '1px solid var(--error)',
+            borderRadius: 12, padding: '1rem',
+          }}>
+            <p style={{ color: 'var(--error)', fontSize: 13, marginBottom: 12 }}>Delete {user.name}&apos;s account? This cannot be undone.</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirming(false)} className="btn btn-secondary" style={{ flex: 1, fontSize: 13 }}>Cancel</button>
+              <button onClick={() => onDelete(user.email)} className="btn btn-danger" style={{ flex: 1, fontSize: 13 }}>Delete</button>
             </div>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-outline-variant text-on-surface-variant hover:text-on-surface transition-colors text-sm">Close</button>
-            <button onClick={() => setConfirming(true)} className="px-4 py-2 rounded-xl border border-error/40 text-error hover:bg-error/10 transition-colors text-sm">Delete account</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} className="btn btn-secondary" style={{ flex: 1, fontSize: 13 }}>Close</button>
+            <button onClick={() => setConfirming(true)} style={{
+              padding: '6px 16px', borderRadius: 8,
+              border: '1px solid var(--error)', background: 'transparent',
+              color: 'var(--error)', fontSize: 13, cursor: 'pointer', fontWeight: 500,
+            }}>
+              Delete account
+            </button>
           </div>
         )}
       </div>
@@ -257,125 +308,177 @@ export default function AdminPage() {
   ] as const
 
   const tooltipStyle = {
-    background: 'var(--surface-container)',
-    border: '1px solid var(--outline-variant)',
-    borderRadius: '8px',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    color: 'var(--text)',
+    fontSize: 12,
   }
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
       <TopNav />
 
-      <div className="flex">
+      <div style={{ display: 'flex' }}>
         {/* Sidebar */}
-        <aside className="w-52 bg-surface-container border-r border-outline-variant flex-shrink-0 flex flex-col h-[calc(100vh-56px)] sticky top-14">
-          <div className="p-4 border-b border-outline-variant">
-            <span className="font-label text-primary text-[10px] uppercase tracking-widest">Admin</span>
-            <p className="text-on-surface font-serif font-semibold mt-0.5">Platform Management</p>
+        <aside style={{
+          width: 208,
+          background: 'var(--bg-card)',
+          borderRight: '1px solid var(--border)',
+          flexShrink: 0,
+          height: 'calc(100dvh - 56px)',
+          position: 'sticky',
+          top: 56,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)' }}>Admin</span>
+            <p style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)', marginTop: 4, fontSize: 14 }}>Platform Management</p>
           </div>
-          <nav className="p-2 space-y-0.5 flex-1">
+          <nav style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
             {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2.5 ${
-                  tab === t.id
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
-                }`}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  background: tab === t.id ? 'var(--accent-dim)' : 'transparent',
+                  color: tab === t.id ? 'var(--accent)' : 'var(--text-2)',
+                }}
+                onMouseEnter={e => {
+                  if (tab !== t.id) e.currentTarget.style.background = 'var(--bg-raised)'
+                }}
+                onMouseLeave={e => {
+                  if (tab !== t.id) e.currentTarget.style.background = 'transparent'
+                }}
               >
-                <span className="material-symbols-outlined text-base"
-                  style={tab === t.id ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                <span className="material-symbols-outlined" style={{
+                  fontSize: 18,
+                  fontVariationSettings: tab === t.id ? "'FILL' 1" : "'FILL' 0",
+                }}>
                   {t.icon}
                 </span>
                 {t.label}
               </button>
             ))}
           </nav>
-          <div className="p-2 border-t border-outline-variant">
+          <div style={{ padding: 8, borderTop: '1px solid var(--border)' }}>
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-full flex items-center gap-2 px-3 py-2 text-on-surface-variant/60 text-xs hover:text-on-surface-variant transition-colors rounded-lg hover:bg-surface-container-high"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--text-3)',
+                fontSize: 13,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-raised)'; e.currentTarget.style.color = 'var(--text-2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)' }}
             >
-              <span className="material-symbols-outlined text-sm">arrow_back</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
               Back to app
             </button>
           </div>
         </aside>
 
-        {/* Main */}
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Main content */}
+        <main style={{ flex: 1, overflow: 'auto' }}>
+          <div style={{ maxWidth: 800, margin: '0 auto', padding: '2rem 1.5rem' }}>
             {loading ? (
-              <div className="flex flex-col items-center justify-center h-64 gap-3">
-                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="text-on-surface-variant text-sm">Loading admin data…</p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 256, gap: 12 }}>
+                <div style={{
+                  width: 32, height: 32,
+                  border: '2px solid var(--accent-dim)', borderTopColor: 'var(--accent)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.6s linear infinite',
+                }} />
+                <p style={{ color: 'var(--text-2)', fontSize: 14 }}>Loading admin data…</p>
               </div>
             ) : (
               <>
                 {/* OVERVIEW */}
                 {tab === 'overview' && stats && (
-                  <div className="space-y-6">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div>
-                      <span className="font-label text-primary text-[10px] uppercase tracking-widest">Overview</span>
-                      <h1 className="font-serif text-h1 text-on-surface mt-1">Platform dashboard</h1>
+                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>Overview</span>
+                      <h1 style={{ fontFamily: 'Noto Serif, serif', fontSize: '1.75rem', color: 'var(--text)', marginTop: 4 }}>Platform dashboard</h1>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <StatCard label="TOTAL USERS" value={stats.users.total} icon="group" />
-                      <StatCard label="NEW THIS WEEK" value={stats.users.newThisWeek} icon="person_add" color="text-secondary" />
-                      <StatCard label="EXAMS TAKEN" value={stats.activity.totalExams} icon="edit_note" color="text-tertiary" />
-                      <StatCard label="AVG SCORE" value={`${stats.activity.avgScore}%`} icon="analytics" />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                      <StatCard label="Total Users" value={stats.users.total} icon="group" />
+                      <StatCard label="New This Week" value={stats.users.newThisWeek} icon="person_add" accent="var(--text-2)" />
+                      <StatCard label="Exams Taken" value={stats.activity.totalExams} icon="edit_note" accent="var(--text-3)" />
+                      <StatCard label="Avg Score" value={`${stats.activity.avgScore}%`} icon="analytics" />
                     </div>
 
-                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
-                      <h2 className="font-serif font-semibold text-on-surface mb-4">Sign-up providers</h2>
+                    {/* Sign-up providers */}
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                      <h2 style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Sign-up providers</h2>
                       {[
                         { label: 'Google', count: stats.users.byProvider.google, color: '#4285F4' },
-                        { label: 'GitHub', count: stats.users.byProvider.github, color: '#8B949E' },
-                        { label: 'Email', count: stats.users.byProvider.email, color: '#f2ca50' },
+                        { label: 'GitHub', count: stats.users.byProvider.github, color: 'var(--text-3)' },
+                        { label: 'Email', count: stats.users.byProvider.email, color: 'var(--accent)' },
                       ].map(p => (
-                        <div key={p.label} className="flex items-center gap-3 mb-3">
-                          <span className="text-on-surface-variant text-sm w-14">{p.label}</span>
-                          <div className="flex-1 bg-surface-container-highest rounded-full h-1.5">
+                        <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                          <span style={{ color: 'var(--text-2)', fontSize: 13, width: 56 }}>{p.label}</span>
+                          <div style={{ flex: 1, height: 6, background: 'var(--bg-sunken)', borderRadius: 9999 }}>
                             <div
-                              className="h-1.5 rounded-full transition-all"
-                              style={{ width: `${stats.users.total ? (p.count / stats.users.total) * 100 : 0}%`, backgroundColor: p.color }}
+                              style={{ height: '100%', borderRadius: 9999, background: p.color, width: `${stats.users.total ? (p.count / stats.users.total) * 100 : 0}%` }}
                             />
                           </div>
-                          <span className="text-on-surface-variant/60 text-xs w-24 text-right tabular">
+                          <span style={{ color: 'var(--text-3)', fontSize: 12, width: 80, textAlign: 'right' }} className="tabular">
                             {p.count} ({stats.users.total ? Math.round((p.count / stats.users.total) * 100) : 0}%)
                           </span>
                         </div>
                       ))}
                     </div>
 
-                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
-                      <h2 className="font-serif font-semibold text-on-surface mb-4">Active users — last 7 days</h2>
+                    {/* Active users chart */}
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                      <h2 style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Active users — last 7 days</h2>
                       <ResponsiveContainer width="100%" height={160}>
                         <LineChart data={activityChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.4} />
-                          <XAxis dataKey="day" tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--on-surface)' }} itemStyle={{ color: 'var(--primary)' }} />
-                          <Line type="monotone" dataKey="users" stroke="var(--primary)" strokeWidth={2} dot={{ fill: 'var(--primary)', r: 3 }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                          <XAxis dataKey="day" tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Line type="monotone" dataKey="users" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 3 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
 
+                    {/* Cert popularity */}
                     {certChartData.length > 0 && (
-                      <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
-                        <h2 className="font-serif font-semibold text-on-surface mb-4">Most popular certifications</h2>
+                      <div className="card" style={{ padding: '1.25rem' }}>
+                        <h2 style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Most popular certifications</h2>
                         {certChartData.map(c => (
-                          <div key={c.cert} className="flex items-center gap-3 mb-3">
-                            <span className="text-on-surface-variant text-sm w-20 font-medium">{c.cert}</span>
-                            <div className="flex-1 bg-surface-container-highest rounded-full h-1.5">
+                          <div key={c.cert} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                            <span style={{ color: 'var(--text-2)', fontSize: 13, width: 80, fontWeight: 500 }}>{c.cert}</span>
+                            <div style={{ flex: 1, height: 6, background: 'var(--bg-sunken)', borderRadius: 9999 }}>
                               <div
-                                className="h-1.5 rounded-full bg-primary transition-all"
-                                style={{ width: `${certChartData[0].count ? (c.count / certChartData[0].count) * 100 : 0}%` }}
+                                style={{ height: '100%', borderRadius: 9999, background: 'var(--accent)', width: `${certChartData[0].count ? (c.count / certChartData[0].count) * 100 : 0}%` }}
                               />
                             </div>
-                            <span className="text-on-surface-variant/60 text-xs w-16 text-right tabular">{c.count} users</span>
+                            <span style={{ color: 'var(--text-3)', fontSize: 12, width: 64, textAlign: 'right' }} className="tabular">{c.count} users</span>
                           </div>
                         ))}
                       </div>
@@ -385,54 +488,71 @@ export default function AdminPage() {
 
                 {/* USERS */}
                 {tab === 'users' && stats && (
-                  <div className="space-y-5">
-                    <div className="flex items-center justify-between gap-4">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
                       <div>
-                        <span className="font-label text-primary text-[10px] uppercase tracking-widest">Users</span>
-                        <h1 className="font-serif text-h2 text-on-surface mt-0.5">{stats.users.total} registered users</h1>
+                        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>Users</span>
+                        <h1 style={{ fontFamily: 'Noto Serif, serif', fontSize: '1.5rem', color: 'var(--text)', marginTop: 4 }}>{stats.users.total} registered users</h1>
                       </div>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
+                      <div style={{ position: 'relative' }}>
+                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', fontSize: 18 }}>search</span>
                         <input
                           type="text"
                           placeholder="Search by name or email…"
                           value={search}
                           onChange={e => { setSearch(e.target.value); setPage(0) }}
-                          className="bg-surface-container border border-outline-variant rounded-xl pl-10 pr-4 py-2 text-on-surface text-sm placeholder-on-surface-variant/40 w-64 focus:outline-none focus:border-primary/50"
+                          className="input"
+                          style={{ paddingLeft: 40, width: 260 }}
                         />
                       </div>
                     </div>
 
-                    <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden">
-                      <table className="w-full text-sm">
+                    {/* User table */}
+                    <div className="card" style={{ overflow: 'hidden' }}>
+                      <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr className="border-b border-outline-variant">
+                          <tr style={{ borderBottom: '1px solid var(--border)' }}>
                             {['Name / Email', 'Via', 'Joined', 'Last active', 'Exams', 'Score', ''].map(h => (
-                              <th key={h} className="text-left px-4 py-3 font-label text-on-surface-variant text-[10px] uppercase tracking-wider">{h}</th>
+                              <th key={h} style={{
+                                textAlign: 'left', padding: '12px 16px',
+                                fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
+                                textTransform: 'uppercase', color: 'var(--text-3)',
+                              }}>
+                                {h}
+                              </th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {pageUsers.map(u => (
-                            <tr key={u.id} className="border-b border-outline-variant/50 hover:bg-surface-container-high transition-colors">
-                              <td className="px-4 py-3">
-                                <p className="text-on-surface font-medium text-sm">{u.name}</p>
-                                <p className="text-on-surface-variant/60 text-xs">{u.email}</p>
+                            <tr key={u.id} style={{
+                              borderBottom: '1px solid var(--border-2)',
+                              transition: 'background 0.15s',
+                            }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-raised)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                            >
+                              <td style={{ padding: '12px 16px' }}>
+                                <p style={{ color: 'var(--text)', fontWeight: 500, fontSize: 13 }}>{u.name}</p>
+                                <p style={{ color: 'var(--text-3)', fontSize: 12 }}>{u.email}</p>
                               </td>
-                              <td className="px-4 py-3"><ProviderBadge provider={u.provider} /></td>
-                              <td className="px-4 py-3 text-on-surface-variant text-xs">{formatDate(u.createdAt)}</td>
-                              <td className="px-4 py-3 text-on-surface-variant text-xs">{formatDate(u.lastActive)}</td>
-                              <td className="px-4 py-3 text-on-surface tabular text-sm">{u.examsCompleted}</td>
-                              <td className="px-4 py-3">
+                              <td style={{ padding: '12px 16px' }}><ProviderBadge provider={u.provider} /></td>
+                              <td style={{ padding: '12px 16px', color: 'var(--text-3)', fontSize: 12 }}>{formatDate(u.createdAt)}</td>
+                              <td style={{ padding: '12px 16px', color: 'var(--text-3)', fontSize: 12 }}>{formatDate(u.lastActive)}</td>
+                              <td style={{ padding: '12px 16px', color: 'var(--text)' }} className="tabular">{u.examsCompleted}</td>
+                              <td style={{ padding: '12px 16px' }}>
                                 {u.lastExamScore !== null
-                                  ? <span className={`font-semibold tabular text-sm ${u.lastExamScore >= 70 ? 'text-primary' : 'text-error'}`}>{u.lastExamScore}%</span>
-                                  : <span className="text-on-surface-variant/30">—</span>
+                                  ? <span style={{ fontWeight: 600, color: u.lastExamScore >= 70 ? 'var(--success)' : 'var(--error)' }} className="tabular">{u.lastExamScore}%</span>
+                                  : <span style={{ color: 'var(--text-3)' }}>—</span>
                                 }
                               </td>
-                              <td className="px-4 py-3">
+                              <td style={{ padding: '12px 16px' }}>
                                 <button
                                   onClick={() => setSelectedUser(u)}
-                                  className="text-primary/70 hover:text-primary text-xs transition-colors font-medium"
+                                  style={{
+                                    background: 'none', border: 'none', cursor: 'pointer',
+                                    color: 'var(--accent)', fontSize: 12, fontWeight: 600,
+                                  }}
                                 >
                                   View
                                 </button>
@@ -440,20 +560,41 @@ export default function AdminPage() {
                             </tr>
                           ))}
                           {pageUsers.length === 0 && (
-                            <tr><td colSpan={7} className="px-4 py-10 text-center text-on-surface-variant/40 text-sm">No users found</td></tr>
+                            <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>No users found</td></tr>
                           )}
                         </tbody>
                       </table>
                     </div>
 
+                    {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2">
-                        <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm disabled:opacity-30 hover:text-on-surface transition-colors">
-                          <span className="material-symbols-outlined text-base">chevron_left</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <button
+                          disabled={page === 0}
+                          onClick={() => setPage(p => p - 1)}
+                          style={{
+                            width: 32, height: 32, borderRadius: 8,
+                            border: '1px solid var(--border)', background: 'transparent',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', color: 'var(--text-2)',
+                            opacity: page === 0 ? 0.3 : 1,
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
                         </button>
-                        <span className="text-on-surface-variant text-sm tabular">{page + 1} / {totalPages}</span>
-                        <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm disabled:opacity-30 hover:text-on-surface transition-colors">
-                          <span className="material-symbols-outlined text-base">chevron_right</span>
+                        <span style={{ color: 'var(--text-3)', fontSize: 13 }} className="tabular">{page + 1} / {totalPages}</span>
+                        <button
+                          disabled={page >= totalPages - 1}
+                          onClick={() => setPage(p => p + 1)}
+                          style={{
+                            width: 32, height: 32, borderRadius: 8,
+                            border: '1px solid var(--border)', background: 'transparent',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', color: 'var(--text-2)',
+                            opacity: page >= totalPages - 1 ? 0.3 : 1,
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
                         </button>
                       </div>
                     )}
@@ -462,44 +603,44 @@ export default function AdminPage() {
 
                 {/* ACTIVITY */}
                 {tab === 'activity' && stats && (
-                  <div className="space-y-6">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div>
-                      <span className="font-label text-primary text-[10px] uppercase tracking-widest">Activity</span>
-                      <h1 className="font-serif text-h2 text-on-surface mt-0.5">Exam analytics</h1>
+                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>Activity</span>
+                      <h1 style={{ fontFamily: 'Noto Serif, serif', fontSize: '1.5rem', color: 'var(--text)', marginTop: 4 }}>Exam analytics</h1>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <StatCard label="ACTIVE THIS WEEK" value={stats.activity.activeThisWeek} icon="trending_up" />
-                      <StatCard label="TOTAL EXAMS" value={stats.activity.totalExams} icon="edit_note" />
-                      <StatCard label="AVG SCORE" value={`${stats.activity.avgScore}%`} icon="analytics" />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+                      <StatCard label="Active This Week" value={stats.activity.activeThisWeek} icon="trending_up" />
+                      <StatCard label="Total Exams" value={stats.activity.totalExams} icon="edit_note" />
+                      <StatCard label="Avg Score" value={`${stats.activity.avgScore}%`} icon="analytics" />
                     </div>
 
-                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
-                      <h2 className="font-serif font-semibold text-on-surface mb-4">Certification popularity</h2>
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                      <h2 style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Certification popularity</h2>
                       {certChartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={200}>
                           <BarChart data={certChartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.4} />
-                            <XAxis dataKey="cert" tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                            <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--on-surface)' }} itemStyle={{ color: 'var(--primary)' }} />
-                            <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                            <XAxis dataKey="cert" tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                            <Tooltip contentStyle={tooltipStyle} />
+                            <Bar dataKey="count" fill="var(--accent)" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <p className="text-on-surface-variant/40 text-sm text-center py-8">No exam data yet</p>
+                        <p style={{ color: 'var(--text-3)', fontSize: 14, textAlign: 'center', padding: 32 }}>No exam data yet</p>
                       )}
                     </div>
 
-                    <div className="bg-surface-container rounded-xl border border-outline-variant p-5">
-                      <h2 className="font-serif font-semibold text-on-surface mb-4">Score distribution</h2>
+                    <div className="card" style={{ padding: '1.25rem' }}>
+                      <h2 style={{ fontFamily: 'Noto Serif, serif', fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>Score distribution</h2>
                       <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={scoreDistData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.4} />
-                          <XAxis dataKey="label" tick={{ fill: 'var(--on-surface-variant)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill: 'var(--on-surface-variant)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--on-surface)' }} itemStyle={{ color: 'var(--secondary)' }} />
-                          <Bar dataKey="count" fill="var(--secondary)" radius={[4, 4, 0, 0]} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                          <XAxis dataKey="label" tick={{ fill: 'var(--text-3)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Bar dataKey="count" fill="var(--text-2)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -508,53 +649,70 @@ export default function AdminPage() {
 
                 {/* SETTINGS */}
                 {tab === 'settings' && (
-                  <div className="space-y-6 max-w-lg">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 480 }}>
                     <div>
-                      <span className="font-label text-primary text-[10px] uppercase tracking-widest">Settings</span>
-                      <h1 className="font-serif text-h2 text-on-surface mt-0.5">Platform settings</h1>
+                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>Settings</span>
+                      <h1 style={{ fontFamily: 'Noto Serif, serif', fontSize: '1.5rem', color: 'var(--text)', marginTop: 4 }}>Platform settings</h1>
                     </div>
 
-                    <div className="bg-surface-container border border-outline-variant rounded-xl p-5 space-y-5">
-                      <div className="flex items-center justify-between">
+                    <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      {/* Maintenance toggle */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                          <p className="text-on-surface text-sm font-medium">Maintenance mode</p>
-                          <p className="text-on-surface-variant/60 text-xs mt-0.5">Blocks all non-admin users</p>
+                          <p style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500 }}>Maintenance mode</p>
+                          <p style={{ color: 'var(--text-3)', fontSize: 12, marginTop: 2 }}>Blocks all non-admin users</p>
                         </div>
                         <button
                           onClick={() => setSettings(s => ({ ...s, maintenance: !s.maintenance }))}
-                          className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${settings.maintenance ? 'bg-primary' : 'bg-surface-container-highest'}`}
+                          style={{
+                            width: 44, height: 24, borderRadius: 12,
+                            border: 'none', cursor: 'pointer',
+                            background: settings.maintenance ? 'var(--accent)' : 'var(--bg-sunken)',
+                            position: 'relative', flexShrink: 0,
+                            transition: 'background 0.2s',
+                          }}
                         >
-                          <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${settings.maintenance ? 'right-1' : 'left-1'}`} />
+                          <div style={{
+                            width: 18, height: 18, background: 'white',
+                            borderRadius: '50%', position: 'absolute',
+                            top: 3, left: settings.maintenance ? 23 : 3,
+                            transition: 'left 0.2s',
+                          }} />
                         </button>
                       </div>
 
+                      {/* Banner */}
                       <div>
-                        <label className="text-on-surface text-sm font-medium block mb-1.5">Announcement banner</label>
+                        <label style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500, display: 'block', marginBottom: 6 }}>Announcement banner</label>
                         <input
                           type="text"
                           value={settings.banner}
                           onChange={e => setSettings(s => ({ ...s, banner: e.target.value }))}
                           placeholder="Leave blank to hide banner"
-                          className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface text-sm placeholder-on-surface-variant/40 focus:outline-none focus:border-primary/50"
+                          className="input"
+                          style={{ width: '100%' }}
                         />
                       </div>
 
+                      {/* Featured cert */}
                       <div>
-                        <label className="text-on-surface text-sm font-medium block mb-1.5">Featured certification</label>
+                        <label style={{ color: 'var(--text)', fontSize: 14, fontWeight: 500, display: 'block', marginBottom: 6 }}>Featured certification</label>
                         <input
                           type="text"
                           value={settings.featuredCert}
                           onChange={e => setSettings(s => ({ ...s, featuredCert: e.target.value }))}
                           placeholder="e.g. ccxp"
-                          className="w-full bg-surface-container-high border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface text-sm placeholder-on-surface-variant/40 focus:outline-none focus:border-primary/50"
+                          className="input"
+                          style={{ width: '100%' }}
                         />
                       </div>
 
                       <button
                         onClick={saveSettings}
-                        className="w-full bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:brightness-110 transition-all text-sm shadow-primary-btn"
+                        className="btn btn-primary"
+                        style={{ width: '100%' }}
                       >
-                        {settingsSaved ? 'Saved' : 'Save settings'}
+                        {settingsSaved ? '✓ Saved' : 'Save settings'}
                       </button>
                     </div>
                   </div>
