@@ -159,10 +159,12 @@ export default function DomainPage({ certId }: Props) {
   }, [autoExpandTopic, s2.data])
 
   useEffect(() => {
-    const handler = (e: CustomEvent) => { handleTopicExpand(e.detail.topic) }
+    const handler = (e: CustomEvent) => {
+      setAutoExpandTopic(e.detail.topic)
+    }
     window.addEventListener('expand-topic', handler as EventListener)
     return () => window.removeEventListener('expand-topic', handler as EventListener)
-  }, [s2.data])
+  }, [])
 
   if (!domain || !certDomain) return null
 
