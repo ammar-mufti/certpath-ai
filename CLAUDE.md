@@ -54,14 +54,6 @@ Four-stage progressive learning per domain: Summary → Concepts → Deep Dive �
 ### TutorChat Architecture
 `TutorChat` is a controlled sliding panel managed by `AppShell` (holds `tutorOpen` state, renders `<TutorChat>`). The `CertSidebar` receives `onOpenTutor` via `React.cloneElement`. Mobile nav triggers it via `window.dispatchEvent(new CustomEvent('certpath-open-tutor'))`. The old pattern of `TutorChat` managing its own open state is deprecated.
 
-### Active Topic & Sidebar Behavior
-- `DomainPage` emits `certpath-active-topic-changed` custom event when a topic is expanded. `AppShell` listens and passes `activeTopic` to `CertSidebar` via `React.cloneElement`.
-- Domain sections in `CertSidebar` are collapsible. `userToggledDomain` state tracks manual toggle; URL `domainSlug` provides derived expansion. Clicking a domain button toggles its topic list.
-- Topics in sidebar highlight when active (`activeTopic` matches), with accent background, left border, and filled indicator.
-
-### Step Completion Tracking
-- `learnStore` provides `markStepComplete`, `getCompletedSteps`, `resetSteps` for tracking individual step completion in deep-dive accordions. Keyed by `certId::domain::topic`. Stored in `completedSteps` field of `DomainProgress`.
-
 ### Worker API Surface
 Key endpoints in `worker/src/index.ts`:
 - `GET /api/health` — maintenance flag, announcement banner, Groq status
@@ -101,7 +93,6 @@ Frontend auto-deploys to GitHub Pages from `main` via `.github/workflows/`. Work
 - /impeccable — design audit and polish
 - /high-end-visual-design — premium visual upgrades
 - Always use Tailwind domain-color tokens, never raw hex
-- ESLint strict rules: `react-hooks/static-components` (no inline components), `react-hooks/set-state-in-effect` (no setState in useEffect), `react-hooks/purity` (no Date.now()/Math.random() in render — use `useState(() => ...)` lazy init), `react-hooks/refs` (no ref.current access during render)
 
 ### Before touching unfamiliar code:
 - /smart-explore — token-optimized code search

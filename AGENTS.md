@@ -4,11 +4,8 @@
 
 - **Styling uses CSS variables**, NOT Tailwind utility colors. Use `var(--bg)`, `var(--bg-card)`, `var(--accent)`, `var(--text)`, `var(--text-2)`, `var(--border)` etc. Utility classes `.card`, `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.input`, `.badge-accent`, `.badge-error`, `.progress-bar` are in `src/index.css`. Do not use raw hex values.
 - **TutorChat is controlled by AppShell.** It does NOT manage its own open state. `AppShell` holds `tutorOpen` state, renders `<TutorChat>`, and passes `onOpenTutor` to `CertSidebar` via `React.cloneElement`. Mobile nav opens it via `window.dispatchEvent(new CustomEvent('certpath-open-tutor'))`.
-- **Active topic tracking** flows through `AppShell` → `CertSidebar` via `activeTopic` prop (injected via `React.cloneElement`). `DomainPage` emits `certpath-active-topic-changed` custom event when a topic is expanded.
-- **Domain collapse toggle** in `CertSidebar` uses `userToggledDomain` state derived from `domainSlug ?? userToggledDomain`. Clicking a domain button toggles its topic list.
 - **LLM content is cached in localStorage** (`src/services/contentCache.ts`). Once generated for a cert+domain+stage combination, it is NEVER re-fetched. Clear cache: `contentCache.clearDomain(certId, domain)`.
 - **GitHub Pages base path is `/certpath-ai/`**. Vite is configured for this. All routing uses `BrowserRouter basename="/certpath-ai"`.
-- **Step completion tracking** lives in `learnStore` (`markStepComplete`, `getCompletedSteps`, `resetSteps`). Keyed by `certId::domain::topic`. Persisted in localStorage via store.
 
 ## Strict TypeScript
 
@@ -18,8 +15,7 @@
 
 - `react-hooks/static-components`: Do NOT define components inside render functions. Extract them to module scope.
 - `react-hooks/set-state-in-effect`: Avoid calling `setState` directly inside `useEffect`. Use a separate state variable, derived state, or handler instead.
-- `react-hooks/purity`: Do NOT call `Date.now()`, `Math.random()`, or other impure functions during render. Use lazy state initializer `useState(() => Math.random())` or a ref.
-- `react-hooks/refs`: Do NOT access ref `.current` during render. Use state for values needed in JSX.
+- `react-hooks/purity`: Do NOT call `Date.now()` or other impure functions during render. Use a ref.
 
 ## Commands
 
