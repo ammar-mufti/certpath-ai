@@ -70,6 +70,7 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
   const domainSlug = location.pathname.split('/learn/')[1]?.split('/')[0] ?? ''
 
   const [activeTopic, setActiveTopic] = useState<string | null>(null)
+  const [collapsedDomains, setCollapsedDomains] = useState<Set<string>>(new Set())
   const topicRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const sidebarRef = useRef<HTMLDivElement | null>(null)
 
@@ -90,6 +91,15 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
     window.addEventListener('expand-topic', handler as EventListener)
     return () => window.removeEventListener('expand-topic', handler as EventListener)
   }, [scrollToTopic])
+
+  function toggleDomainCollapse(slug: string) {
+    setCollapsedDomains(prev => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }
 
   return (
     <div ref={sidebarRef} style={{
@@ -173,7 +183,10 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
             return (
               <div key={d.name}>
                 <button
-                  onClick={() => navigate(`/${certId}/learn/${slug}`)}
+                  onClick={() => {
+                    navigate(`/${certId}/learn/${slug}`)
+                    if (active) toggleDomainCollapse(slug)
+                  }}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -207,7 +220,7 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                       <span className="material-symbols-outlined" style={{
                         fontSize: 14,
                         color: 'var(--text-3)',
-                        transform: active ? 'rotate(90deg)' : 'rotate(0)',
+                        transform: active && !collapsedDomains.has(slug) ? 'rotate(90deg)' : 'rotate(0)',
                         transition: 'transform 0.2s',
                       }}>
                         chevron_right
@@ -228,7 +241,7 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                 </button>
 
                 {/* Topic list when domain is active and not collapsed */}
-                {active && d.topics.length > 0 && (
+                {active && !collapsedDomains.has(slug) && d.topics.length > 0 && (
                   <div style={{
                     marginLeft: 12, paddingLeft: 10,
                     borderLeft: '2px solid var(--accent-dim)',
