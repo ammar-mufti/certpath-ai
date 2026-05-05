@@ -12,6 +12,7 @@ interface Props {
   domain: string
   topics: Stage2Topic[]
   autoExpandTopic: string | null
+  activeTopic: string | null
   topicRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>
 }
 
@@ -19,19 +20,19 @@ interface TopicCardProps {
   certId: string
   domain: string
   topic: Stage2Topic
-  autoExpand: boolean
+  expanded: boolean
+  isActive: boolean
+  onToggle: () => void
   onRef: (el: HTMLDivElement | null) => void
   index: number
 }
 
-function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCardProps) {
+function TopicCard({ certId, domain, topic, expanded, isActive, onToggle, onRef, index }: TopicCardProps) {
   const { getReadTopics, markTopicRead } = useLearnStore()
-  const [userToggled, setUserToggled] = useState<boolean | null>(null)
   const [showDeepDive, setShowDeepDive] = useState(false)
   const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const topicsRead = getReadTopics(certId, domain)
   const isRead = topicsRead.includes(topic.topic)
-  const expanded = userToggled ?? autoExpand
 
   const { data: deepDive, loading: deepLoading, error: deepError, load: deepLoad } =
     useStageContent<Stage3DeepDive>(certId, domain, 'stage3-deepdive', {
@@ -61,25 +62,40 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
     <div
       id={`topic-${topicSlug}`}
       ref={onRef}
-      style={{ marginBottom: 12 }}
+      style={{
+        marginBottom: 12,
+        position: 'relative',
+      }}
     >
+      {/* Active indicator bar */}
+      {isActive && (
+        <div style={{
+          position: 'absolute',
+          left: -16,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: 'var(--accent)',
+          borderRadius: 2,
+        }} />
+      )}
       {/* Topic header button */}
       <button
         type="button"
-        onClick={() => setUserToggled(!expanded)}
+        onClick={onToggle}
         style={{
           width: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '1rem 1.25rem',
-          background: expanded ? 'var(--bg-raised)' : 'var(--bg-card)',
-          border: `1px solid ${expanded ? 'var(--accent)' : 'var(--border)'}`,
+          background: isActive ? 'var(--accent-dim)' : expanded ? 'var(--bg-raised)' : 'var(--bg-card)',
+          border: `1px solid ${isActive || expanded ? 'var(--accent)' : 'var(--border)'}`,
           borderRadius: expanded ? '12px 12px 0 0' : 12,
           cursor: 'pointer',
           textAlign: 'left',
           transition: 'all 0.2s',
-          boxShadow: expanded ? '0 0 20px rgba(242,202,80,0.08)' : 'var(--shadow)',
+          boxShadow: isActive || expanded ? '0 0 20px rgba(242,202,80,0.08)' : 'var(--shadow)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -109,7 +125,7 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
             </div>
             <div style={{
               fontFamily: 'Noto Serif, serif', fontSize: '1rem', fontWeight: 600,
-              color: expanded ? 'var(--accent)' : 'var(--text)',
+              color: isActive || expanded ? 'var(--accent)' : 'var(--text)',
               transition: 'color 0.15s',
             }}>
               {topic.topic}
@@ -279,9 +295,28 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
   )
 }
 
-export default function Stage2Concepts({ domain, topics, autoExpandTopic, topicRefs }: Props) {
+export default function Stage2Concepts({ domain, topics, autoExpandTopic, activeTopic, topicRefs }: Props) {
   const { certId } = useParams<{ certId?: string }>()
   const resolvedCertId = certId ?? 'ccxp'
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      const topic = e.detail.topic
+      setExpandedTopics(prev => new Set(prev).add(topic))
+    }
+    window.addEventListener('expand-topic', handler as EventListener)
+    return () => window.removeEventListener('expand-topic', handler as EventListener)
+  }, [])
+
+  function handleToggle(topic: string) {
+    setExpandedTopics(prev => {
+      const next = new Set(prev)
+      if (next.has(topic)) next.delete(topic)
+      else next.add(topic)
+      return next
+    })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -291,7 +326,9 @@ export default function Stage2Concepts({ domain, topics, autoExpandTopic, topicR
           certId={resolvedCertId}
           domain={domain}
           topic={topic}
-          autoExpand={autoExpandTopic === topic.topic}
+          expanded={expandedTopics.has(topic.topic) || autoExpandTopic === topic.topic}
+          isActive={activeTopic === topic.topic}
+          onToggle={() => handleToggle(topic.topic)}
           onRef={el => { topicRefs.current[topic.topic] = el }}
           index={i}
         />

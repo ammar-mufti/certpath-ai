@@ -87,6 +87,7 @@ export default function DomainPage({ certId }: Props) {
   const certDomain = cert?.domains.find(d => d.name === domain)
 
   const [autoExpandTopic,  setAutoExpandTopic]  = useState<string | null>(null)
+  const [activeTopic, setActiveTopic] = useState<string | null>(null)
   const [jumpedBannerTopic, setJumpedBannerTopic] = useState<string | null>(null)
   const [showRegenPanel,   setShowRegenPanel]   = useState(false)
 
@@ -100,7 +101,7 @@ export default function DomainPage({ certId }: Props) {
       try {
         const { topic } = JSON.parse(sidebarNav) as { topic: string }
         sessionStorage.removeItem('certpath_sidebar_expand_topic')
-        setTimeout(() => setAutoExpandTopic(topic), 0)
+        setTimeout(() => { setAutoExpandTopic(topic); setActiveTopic(topic) }, 0)
       } catch { /* ignore */ }
     }
     const examNav = sessionStorage.getItem('certpath_navigate_to_topic')
@@ -108,7 +109,7 @@ export default function DomainPage({ certId }: Props) {
       try {
         const { sourceTopic } = JSON.parse(examNav) as { sourceTopic: string }
         sessionStorage.removeItem('certpath_navigate_to_topic')
-        setTimeout(() => { setAutoExpandTopic(sourceTopic); setJumpedBannerTopic(sourceTopic) }, 0)
+        setTimeout(() => { setAutoExpandTopic(sourceTopic); setActiveTopic(sourceTopic); setJumpedBannerTopic(sourceTopic) }, 0)
       } catch { /* ignore */ }
     }
     const legacyNav = sessionStorage.getItem('ccxp_navigate_to_topic')
@@ -116,7 +117,7 @@ export default function DomainPage({ certId }: Props) {
       try {
         const { sourceTopic } = JSON.parse(legacyNav) as { sourceTopic: string }
         sessionStorage.removeItem('ccxp_navigate_to_topic')
-        setTimeout(() => { setAutoExpandTopic(sourceTopic); setJumpedBannerTopic(sourceTopic) }, 0)
+        setTimeout(() => { setAutoExpandTopic(sourceTopic); setActiveTopic(sourceTopic); setJumpedBannerTopic(sourceTopic) }, 0)
       } catch { /* ignore */ }
     }
   }, [])
@@ -175,6 +176,7 @@ export default function DomainPage({ certId }: Props) {
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       setAutoExpandTopic(e.detail.topic)
+      setActiveTopic(e.detail.topic)
     }
     window.addEventListener('expand-topic', handler as EventListener)
     return () => window.removeEventListener('expand-topic', handler as EventListener)
@@ -297,6 +299,7 @@ export default function DomainPage({ certId }: Props) {
                   domain={domain}
                   topics={s2.data}
                   autoExpandTopic={autoExpandTopic}
+                  activeTopic={activeTopic}
                   topicRefs={topicRefs}
                 />
               )}
