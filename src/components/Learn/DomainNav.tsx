@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useLearnStore } from '../../store/learnStore'
 import { toDomainSlug } from '../../utils/domainUtils'
@@ -21,15 +22,38 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
   const activeDomainFromUrl = domains.find(d => toDomainSlug(d.name) === params.domainSlug)?.name ?? _activeDomain
   const activeDomain = activeDomainFromUrl
 
+  const [activeTopic, setActiveTopic] = useState<string | null>(null)
+  const topicRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const sidebarRef = useRef<HTMLDivElement | null>(null)
+
   const overallProgress = domains.length > 0
     ? Math.round(domains.reduce((sum, d) => sum + getDomainProgress(certId, d.name), 0) / domains.length)
     : 0
+
+  const scrollToTopic = useCallback((topic: string) => {
+    setActiveTopic(topic)
+    setTimeout(() => {
+      const el = topicRefs.current[topic]
+      if (el && sidebarRef.current) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }, 100)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      scrollToTopic(e.detail.topic)
+    }
+    window.addEventListener('expand-topic', handler as EventListener)
+    return () => window.removeEventListener('expand-topic', handler as EventListener)
+  }, [scrollToTopic])
 
   function handleTopicClick(domainName: string, topic: string) {
     const targetPath = `/${certId}/learn/${toDomainSlug(domainName)}`
     const currentPath = location.pathname
 
     if (currentPath === targetPath || currentPath.startsWith(targetPath)) {
+      scrollToTopic(topic)
       window.dispatchEvent(new CustomEvent('expand-topic', { detail: { topic } }))
     } else {
       sessionStorage.setItem('certpath_sidebar_expand_topic', JSON.stringify({ topic, domain: domainName }))
@@ -38,7 +62,7 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
   }
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '16px 12px', gap: 4 }}>
+    <div ref={sidebarRef} style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '16px 12px', gap: 4 }}>
       <button
         onClick={() => navigate(`/${certId}/learn`)}
         style={{
@@ -104,24 +128,34 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
               <div style={{ marginLeft: 16, marginTop: 4, marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2, borderLeft: '1px solid var(--border)', paddingLeft: 12 }}>
                 {topics.map(topic => {
                   const isRead = topicsRead.includes(topic)
+                  const isActiveTopic = activeTopic === topic
                   return (
                     <button
                       key={topic}
+                      ref={el => { topicRefs.current[topic] = el }}
                       onClick={() => handleTopicClick(domain.name, topic)}
                       style={{
-                        width: '100%', textAlign: 'left', fontSize: 12, padding: '4px 0',
-                        color: isRead ? 'var(--text-3)' : 'var(--text-2)',
-                        transition: 'color 0.15s', border: 'none', background: 'transparent', cursor: 'pointer',
+                        width: '100%', textAlign: 'left', fontSize: 12, padding: '4px 8px', borderRadius: 4,
+                        color: isActiveTopic ? 'var(--accent)' : isRead ? 'var(--text-3)' : 'var(--text-2)',
+                        transition: 'all 0.15s', border: 'none', cursor: 'pointer',
+                        background: isActiveTopic ? 'var(--accent-dim)' : 'transparent',
                         display: 'flex', alignItems: 'center', gap: 6,
+                        fontWeight: isActiveTopic ? 600 : 400,
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = isRead ? 'var(--text-3)' : 'var(--text-2)' }}
+                      onMouseEnter={e => {
+                        if (!isActiveTopic) { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--bg-raised)' }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActiveTopic) { e.currentTarget.style.color = isRead ? 'var(--text-3)' : 'var(--text-2)'; e.currentTarget.style.background = 'transparent' }
+                      }}
                     >
-                      {isRead
-                        ? <span style={{ color: 'var(--success)', fontSize: 10, flexShrink: 0 }}>✓</span>
-                        : <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border)', flexShrink: 0 }} />
+                      {isActiveTopic
+                        ? <span style={{ color: 'var(--accent)', fontSize: 10, flexShrink: 0 }}>●</span>
+                        : isRead
+                          ? <span style={{ color: 'var(--success)', fontSize: 10, flexShrink: 0 }}>✓</span>
+                          : <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border)', flexShrink: 0 }} />
                       }
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isRead ? 'line-through' : 'none' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isRead && !isActiveTopic ? 'line-through' : 'none' }}>
                         {topic}
                       </span>
                     </button>

@@ -190,14 +190,23 @@ export default function DomainPage({ certId }: Props) {
           </button>
 
           {/* Header */}
-          <p className="label" style={{ marginBottom: 6 }}>
-            MODULE {String(domainIdx + 1).padStart(2, '0')} · {certDomain.percentage}% OF EXAM
-          </p>
-          <h1 style={{ fontSize: '1.875rem', marginBottom: 8 }}>{domain}</h1>
-          <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: '0.5rem' }}>
-            {certDomain.topics.length} topics · {certDomain.weight} questions
-            {generatedDate && <span style={{ color: 'var(--text-3)' }}> · Generated {generatedDate}</span>}
-          </p>
+          <div style={{
+            paddingLeft: 16,
+            borderLeft: `4px solid ${cert?.color ?? 'var(--accent)'}`,
+            background: `${cert?.color ?? 'var(--accent)'}0a`,
+            borderRadius: '0 8px 8px 0',
+            padding: '12px 0 12px 16px',
+            marginBottom: '1.5rem',
+          }}>
+            <p className="label" style={{ marginBottom: 6, color: cert?.color ?? 'var(--accent)' }}>
+              MODULE {String(domainIdx + 1).padStart(2, '0')} · {certDomain.percentage}% OF EXAM
+            </p>
+            <h1 style={{ fontSize: '1.875rem', marginBottom: 8 }}>{domain}</h1>
+            <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: '0.5rem' }}>
+              {certDomain.topics.length} topics · {certDomain.weight} questions
+              {generatedDate && <span style={{ color: 'var(--text-3)' }}> · Generated {generatedDate}</span>}
+            </p>
+          </div>
 
           <div style={{ display: 'flex', gap: 10, marginBottom: '2rem', flexWrap: 'wrap' }}>
             <button
