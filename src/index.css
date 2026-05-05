@@ -278,5 +278,17 @@ input, textarea, select { font-family: inherit; }
 /* ── TABULAR NUMS ─────────────────────────── */
 .tabular { font-variant-numeric: tabular-nums; }
 
+/* ── ANIMATIONS ───────────────────────────── */
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* ── BUTTON PRESS ─────────────────────────── */
 button:active:not(:disabled) { transform: scale(0.99); }

@@ -1,13 +1,8 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useExamStore } from '../../store/examStore'
 import { questionBank } from '../../services/questionBank'
 import { getCert } from '../../data/certifications'
-import type { SavedQuestionSet } from '../../services/questionBank'
-
-interface Props {
-  certId: string
-}
 
 function fisherYates<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -25,21 +20,13 @@ function formatDate(iso: string) {
 function RetakePanel({ certId }: { certId: string }) {
   const { setMode, setQuestions, setCurrentSetId, setLoading } = useExamStore()
   const navigate = useNavigate()
-  const [sets, setSets] = useState<SavedQuestionSet[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const sets = questionBank.getAll(certId)
 
-  useEffect(() => {
-    const all = questionBank.getAll(certId)
-    setSets(all)
-
-    const retakeId = sessionStorage.getItem('certpath_retake_set_id')
-    if (retakeId) {
-      sessionStorage.removeItem('certpath_retake_set_id')
-      setSelectedId(retakeId)
-    } else if (all.length > 0) {
-      setSelectedId(all[0].id)
-    }
-  }, [certId])
+  const retakeId = typeof window !== 'undefined' ? sessionStorage.getItem('certpath_retake_set_id') : null
+  const defaultSelected = retakeId
+    ? (sessionStorage.removeItem('certpath_retake_set_id'), retakeId)
+    : sets.length > 0 ? sets[0].id : null
+  const [selectedId, setSelectedId] = useState<string | null>(defaultSelected)
 
   if (sets.length === 0) return null
 
@@ -58,44 +45,52 @@ function RetakePanel({ certId }: { certId: string }) {
   }
 
   return (
-    <div className="bg-ink border border-white/10 rounded-xl p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">🔄</span>
+    <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+      }}>
+        <span className="material-symbols-outlined" style={{ color: 'var(--accent)', fontSize: 20 }}>refresh</span>
         <div>
-          <div className="text-cream font-bold text-sm">Retake Saved Questions</div>
-          <div className="text-mist text-xs">No API calls — starts instantly</div>
+          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>Retake Saved Questions</div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)' }}>No API calls — starts instantly</div>
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
         {sets.map(s => (
-          <button
+          <label
             key={s.id}
-            onClick={() => setSelectedId(s.id)}
-            className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all flex items-center justify-between gap-3 ${
-              selectedId === s.id
-                ? 'border-gold/60 bg-gold/10 text-cream'
-                : 'border-white/10 text-mist hover:border-white/30 hover:text-cream'
-            }`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 14px',
+              background: selectedId === s.id ? 'var(--accent-dim)' : 'var(--bg-raised)',
+              border: `1px solid ${selectedId === s.id ? 'var(--accent)' : 'var(--border)'}`,
+              borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
+            }}
           >
-            <div className="min-w-0">
-              <div className="text-xs font-semibold truncate">{s.label}</div>
-              <div className="text-[10px] text-mist/60 mt-0.5">
+            <input
+              type="radio"
+              checked={selectedId === s.id}
+              onChange={() => setSelectedId(s.id)}
+              style={{ accentColor: 'var(--accent)' }}
+            />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
                 {s.totalCount}Q · Used {s.timesUsed}×{s.lastUsed ? ` · Last: ${formatDate(s.lastUsed)}` : ''}
               </div>
             </div>
-            <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-colors ${
-              selectedId === s.id ? 'border-gold bg-gold' : 'border-white/30'
-            }`} />
-          </button>
+          </label>
         ))}
       </div>
 
       {selected && (
         <button
+          className="btn btn-primary"
+          style={{ width: '100%' }}
           onClick={startRetake}
-          className="w-full py-2.5 rounded-xl bg-gold text-navy font-bold text-sm hover:bg-amber-400 transition-colors"
         >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>play_arrow</span>
           Start Retake · {selected.totalCount}Q →
         </button>
       )}
@@ -108,88 +103,134 @@ function GeneratePanel({ certId }: { certId: string }) {
   const navigate = useNavigate()
   const cert = getCert(certId)
 
-  const [genMode, setGenMode] = useState<'full' | 'mini'>('full')
+  const [genMode, setGenMode] = useState<'full' | 'mini' | 'domain'>('full')
+  const [selectedDomain, setSelectedDomain] = useState('')
 
   if (!cert) return null
 
   const miniCount = Math.round(cert.examQuestions * 0.2)
 
   function startGenerate() {
-    setMode(genMode)
-    navigate(`/${certId}/exam/loading`)
-  }
-
-  function startDomainDrill(domainName: string) {
-    setMode('domain', domainName)
+    const domainArg = genMode === 'domain' ? selectedDomain : undefined
+    setMode(genMode as 'full' | 'mini' | 'domain', domainArg)
     navigate(`/${certId}/exam/loading`)
   }
 
   return (
-    <div className="bg-ink border border-white/10 rounded-xl p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">✨</span>
+    <div className="card" style={{ padding: '1.25rem' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4,
+      }}>
+        <span className="material-symbols-outlined" style={{ color: 'var(--accent)', fontSize: 20 }}>auto_awesome</span>
         <div>
-          <div className="text-cream font-bold text-sm">Generate New Questions</div>
-          <div className="text-mist text-xs">Fresh AI-generated set · saved automatically</div>
+          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>Generate New Questions</div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Fresh AI-generated set · saved automatically</div>
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {(['full', 'mini'] as const).map(m => (
+      {/* Mode selector */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+        margin: '20px 0',
+      }}>
+        {[
+          { m: 'full' as const, label: 'Full Exam', count: cert.examQuestions, time: cert.examDuration },
+          { m: 'mini' as const, label: 'Mini Drill', count: miniCount, time: 60 },
+        ].map(opt => (
           <button
-            key={m}
-            onClick={() => setGenMode(m)}
-            className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-all ${
-              genMode === m
-                ? 'border-gold bg-gold/20 text-gold'
-                : 'border-white/10 text-mist hover:border-white/30 hover:text-cream'
-            }`}
+            key={opt.m}
+            onClick={() => setGenMode(opt.m)}
+            style={{
+              padding: 14, borderRadius: 10,
+              border: `2px solid ${genMode === opt.m ? 'var(--accent)' : 'var(--border)'}`,
+              background: genMode === opt.m ? 'var(--accent-dim)' : 'var(--bg-raised)',
+              cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+            }}
           >
-            {m === 'full' ? `Full Exam · ${cert.examQuestions}Q` : `Mini Drill · ${miniCount}Q`}
+            <div style={{
+              fontWeight: 700, fontSize: 15,
+              color: genMode === opt.m ? 'var(--accent)' : 'var(--text)',
+              marginBottom: 4,
+            }}>
+              {opt.label}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+              {opt.count}Q · {opt.time} min
+            </div>
           </button>
         ))}
       </div>
 
-      <button
-        onClick={startGenerate}
-        className="w-full py-2.5 rounded-xl bg-gold text-navy font-bold text-sm hover:bg-amber-400 transition-colors"
-      >
-        Generate & Start {genMode === 'full' ? cert.examQuestions : miniCount} Questions →
-      </button>
-
-      <div className="pt-1 border-t border-white/10">
-        <div className="text-xs text-mist mb-2 font-semibold">Domain Drill · 10Q each</div>
-        <div className="grid grid-cols-2 gap-2">
-          {cert.domains.map(domain => (
+      {/* Domain drill */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+          textTransform: 'uppercase', color: 'var(--text-3)',
+          marginBottom: 8,
+        }}>
+          Domain Drill · 10Q each
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {cert.domains.map(d => (
             <button
-              key={domain.name}
-              onClick={() => startDomainDrill(domain.name)}
-              className="bg-navy/60 border border-white/10 hover:border-white/30 rounded-lg p-2.5 text-left transition-all flex items-center gap-2"
+              key={d.name}
+              onClick={() => { setGenMode('domain'); setSelectedDomain(d.name) }}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--r-full)',
+                border: `1px solid ${genMode === 'domain' && selectedDomain === d.name ? 'var(--accent)' : 'var(--border)'}`,
+                background: genMode === 'domain' && selectedDomain === d.name ? 'var(--accent-dim)' : 'var(--bg-raised)',
+                color: genMode === 'domain' && selectedDomain === d.name ? 'var(--accent)' : 'var(--text-2)',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s',
+              }}
             >
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cert.color }} />
-              <span className="text-cream text-xs font-medium leading-tight">{domain.name}</span>
+              {d.name}
             </button>
           ))}
         </div>
       </div>
+
+      <button
+        className="btn btn-primary"
+        style={{ width: '100%' }}
+        onClick={startGenerate}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
+        Generate &amp; Start {
+          genMode === 'domain' ? '10'
+          : genMode === 'mini' ? miniCount
+          : cert.examQuestions
+        } Questions →
+      </button>
     </div>
   )
 }
 
-export default function ConfigScreen({ certId }: Props) {
+export default function ConfigScreen({ certId: propCertId }: { certId?: string }) {
+  const { certId: paramCertId } = useParams<{ certId: string }>()
+  const certId = propCertId || paramCertId || ''
   const cert = getCert(certId)
-  const hasSaved = questionBank.hasAny(certId)
+  const hasSaved = questionBank.hasAny(certId || '')
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-      <div className="mb-6">
-        <h1 className="text-cream font-serif text-2xl mb-1">
-          📝 {cert?.name ?? certId} Practice Exam
+    <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{
+          fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+          textTransform: 'uppercase', color: 'var(--text-3)',
+          marginBottom: 8,
+        }}>
+          {cert?.issuer} · {cert?.name}
+        </div>
+        <h1 style={{
+          fontFamily: 'Noto Serif, serif', fontSize: '1.75rem', marginBottom: 8,
+        }}>
+          Practice Exam
         </h1>
-        <p className="text-mist text-sm">
+        <p style={{ color: 'var(--text-2)', fontSize: 14 }}>
           {cert
-            ? `${cert.examQuestions} questions · ${cert.examDuration} min · Pass: ${cert.passingScore}%`
-            : hasSaved ? 'Retake saved questions or generate a fresh set.' : 'Generate AI-powered practice questions.'
+            ? `${cert.examQuestions} questions · ${cert.examDuration} minutes · Pass ${cert.passingScore}%`
+            : 'Generate AI-powered practice questions.'
           }
         </p>
       </div>
@@ -197,10 +238,10 @@ export default function ConfigScreen({ certId }: Props) {
       {hasSaved && <RetakePanel certId={certId} />}
 
       {hasSaved && (
-        <div className="flex items-center gap-3 py-1">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-mist/40 text-xs">or</span>
-          <div className="flex-1 h-px bg-white/10" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 500 }}>or</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
         </div>
       )}
 

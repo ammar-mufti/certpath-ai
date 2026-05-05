@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation, useNavi
 import { useAuthStore } from './store/authStore'
 import { useHistoryStore } from './store/historyStore'
 import { useLearnStore } from './store/learnStore'
-import { useTutorStore } from './store/tutorStore'
 import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import AdminRoute from './components/Admin/AdminRoute'
@@ -17,7 +16,6 @@ import HistoryPage from './pages/HistoryPage'
 import ComingSoonPage from './pages/ComingSoonPage'
 import AdminPage from './pages/AdminPage'
 import MaintenancePage from './pages/MaintenancePage'
-import TutorChat from './components/AI/TutorChat'
 import { getCert, AVAILABLE_CERTS } from './data/certifications'
 
 function OfflineBanner() {
@@ -51,12 +49,6 @@ function RootRedirect() {
   )
   if (user) return <Navigate to="/dashboard" replace />
   return <LandingPage />
-}
-
-function TutorChatWrapper() {
-  const user = useAuthStore(s => s.user)
-  if (!user) return null
-  return <TutorChat />
 }
 
 function CertLearnPage() {
@@ -117,7 +109,6 @@ function MaintenanceGate({ children, maintenance }: { children: React.ReactNode;
 function MobileBottomNav() {
   const location = useLocation()
   const navigate  = useNavigate()
-  const { setOpen } = useTutorStore()
 
   const segs   = location.pathname.split('/').filter(Boolean)
   const certId = AVAILABLE_CERTS.find(c => segs.includes(c.id))?.id
@@ -144,7 +135,7 @@ function MobileBottomNav() {
         return (
           <button
             key={tab.label}
-            onClick={() => tab.action === 'tutor' ? setOpen(true) : navigate(tab.path!)}
+            onClick={() => tab.action === 'tutor' ? window.dispatchEvent(new CustomEvent('certpath-open-tutor')) : navigate(tab.path!)}
             style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
               gap: 2, padding: '10px 4px',
@@ -236,7 +227,6 @@ export default function App() {
           </Routes>
         </MaintenanceGate>
         <MobileBottomNav />
-        <TutorChatWrapper />
       </BrowserRouter>
     </ThemeProvider>
   )
