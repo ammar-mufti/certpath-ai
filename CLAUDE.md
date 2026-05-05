@@ -37,7 +37,7 @@ Plus `USER_KV` KV namespace binding (defined in `worker/wrangler.jsonc`).
 - **Frontend:** React 19 + TypeScript + Vite, deployed to GitHub Pages at base path `/certpath-ai/`
 - **Backend:** Single Cloudflare Worker (`worker/src/index.ts`, ~965 lines) — handles auth, LLM proxying, admin APIs
 - **State:** Zustand stores (`src/store/`)
-- **Styling:** Tailwind CSS with a custom domain-color palette and DM Sans / DM Serif Display fonts
+- **Styling:** AcademiaAI design system using CSS variables in `src/index.css` (`var(--bg)`, `var(--accent)`, etc.) with utility classes (`.card`, `.btn`, `.input`). Tailwind CSS installed but not used for component styling — prefer CSS vars + utility classes. Theme toggle via `src/context/ThemeContext`.
 
 ### Auth Flow
 Custom JWT auth — no Firebase. The worker signs tokens with HMAC-SHA256 via the Web Crypto API and stores user records in Cloudflare KV (`user_${email}`). Tokens are kept in `localStorage` (`ccxp_jwt`). Three providers: GitHub OAuth, Google OAuth, email/password (rate-limited: 5 failed attempts per 15 min). `src/services/auth.ts` parses/validates JWTs on the frontend; `src/store/authStore.ts` holds the live user state.
@@ -50,6 +50,9 @@ Four-stage progressive learning per domain: Summary → Concepts → Deep Dive �
 
 ### Routing
 `src/App.tsx` sets up three route layers: public (`/`, `/login`), protected (all cert routes via `<ProtectedRoute>`), and admin (`/admin` via `<AdminRoute>`). Cert-scoped routes use `/:certId/` prefix. Legacy CCXP-only URLs redirect to the cert-generic equivalents. A `MaintenanceGate` component wraps the whole app and blocks non-admins when the worker's `/api/health` endpoint returns maintenance mode.
+
+### TutorChat Architecture
+`TutorChat` is a controlled sliding panel managed by `AppShell` (holds `tutorOpen` state, renders `<TutorChat>`). The `CertSidebar` receives `onOpenTutor` via `React.cloneElement`. Mobile nav triggers it via `window.dispatchEvent(new CustomEvent('certpath-open-tutor'))`. The old pattern of `TutorChat` managing its own open state is deprecated.
 
 ### Worker API Surface
 Key endpoints in `worker/src/index.ts`:
@@ -64,7 +67,7 @@ Frontend auto-deploys to GitHub Pages from `main` via `.github/workflows/`. Work
 
 ## Key Conventions
 
-- **Domain colors** are defined in `tailwind.config.js` (e.g. `bg-strategy-500`, `text-gold-600`). Use these token names, not raw hex values, in components.
+- **CSS variable design system** — all colors use `var(--accent)`, `var(--bg-card)`, etc. from `src/index.css`. Never use raw hex values in components.
 - **Cert availability** is controlled by the `available` flag in `src/data/certifications.ts`. Unavailable certs redirect to `ComingSoonPage`.
 - **Admin access** is determined by comparing the JWT's email to `ADMIN_EMAIL` in the worker; the frontend reflects this via `authStore.user.isAdmin`.
 - The worker is the only place the Groq API key exists — never call Groq directly from frontend code.
