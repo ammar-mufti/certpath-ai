@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { getCert } from '../../data/certifications'
+import { stripMarker } from '../../utils/stripMarker'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -240,8 +241,9 @@ export default function TutorChat({ isOpen, onClose, pageContext }: TutorChatPro
                   if (line.startsWith('**') && line.endsWith('**')) {
                     return <div key={j} style={{ marginBottom: mb }}><strong>{line.slice(2, -2)}</strong></div>
                   }
-                  if (line.startsWith('* ') || line.startsWith('• ')) {
-                    return <div key={j} style={{ marginBottom: mb }}>• {line.slice(2)}</div>
+                  const stripped = stripMarker(line)
+                  if (stripped !== line) {
+                    return <div key={j} style={{ marginBottom: mb }}>• {stripped}</div>
                   }
                   return <div key={j} style={{ marginBottom: mb }}>{line}</div>
                 })}

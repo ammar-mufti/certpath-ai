@@ -4,6 +4,7 @@ import type { Stage2Topic } from '../../types/content'
 import { useLearnStore } from '../../store/learnStore'
 import { useStageContent } from '../../hooks/useStageContent'
 import { toTopicSlug } from '../../utils/domainUtils'
+import { stripMarker } from '../../utils/stripMarker'
 import type { Stage3DeepDive } from '../../types/content'
 import Stage3DeepDiveComponent from './Stage3DeepDive'
 
@@ -151,7 +152,7 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
                 color: 'var(--text-2)', lineHeight: 1.6,
               }}>
                 <span style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 3, fontSize: 10 }}>●</span>
-                <span>{b}</span>
+                <span>{stripMarker(b)}</span>
               </li>
             ))}
           </ul>

@@ -4,6 +4,7 @@ import type { Question } from '../../store/examStore'
 import { useExamStore } from '../../store/examStore'
 import { useAuthStore } from '../../store/authStore'
 import { toDomainSlug } from '../../utils/domainUtils'
+import { stripMarker } from '../../utils/stripMarker'
 
 const OPTION_LABELS = ['a', 'b', 'c', 'd'] as const
 const WORKER_URL = import.meta.env.VITE_WORKER_URL
@@ -19,8 +20,8 @@ interface Props {
 function renderMarkdown(text: string) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.+)$/gm, '<div class="flex gap-2 mt-1"><span class="text-gold flex-shrink-0">•</span><span>$1</span></div>')
-    .replace(/\n\n/g, '<div class="mt-2"></div>')
+    .replace(/^[•●\-–—*]\s*(.+)$/gm, '<div style="display:flex;gap:8px;margin-top:4px"><span style="color:var(--accent);flex-shrink:0;font-size:10px">●</span><span>$1</span></div>')
+    .replace(/\n\n/g, '<div style="margin-top:8px"></div>')
     .replace(/\n/g, '<br/>')
 }
 
@@ -72,15 +73,22 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
   }
 
   return (
-    <div className="bg-ink rounded-2xl p-6 border border-white/10">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-mist text-sm">Question {questionNumber} of {totalQuestions}</span>
-        <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-mist">{question.domain}</span>
+    <div className="card" style={{ padding: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ color: 'var(--text-2)', fontSize: 13 }}>Question {questionNumber} of {totalQuestions}</span>
+        <span style={{
+          fontSize: 11, padding: '3px 10px', borderRadius: 9999,
+          background: 'var(--bg-raised)', color: 'var(--text-2)',
+        }}>
+          {question.domain}
+        </span>
       </div>
 
-      <p className="text-cream text-lg leading-relaxed mb-6">{question.q}</p>
+      <p style={{ color: 'var(--text)', fontSize: '1.125rem', lineHeight: 1.7, marginBottom: 24 }}>
+        {question.q}
+      </p>
 
-      <div className="grid gap-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {OPTION_LABELS.map(opt => {
           const text = question[opt]
           const isSelected = selectedAnswer === opt
@@ -88,31 +96,79 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
             <button
               key={opt}
               onClick={() => onAnswer(opt)}
-              className={`w-full text-left rounded-xl p-4 border transition-all flex items-start gap-3 ${
-                isSelected
-                  ? 'border-gold bg-gold/10 text-cream'
-                  : 'border-white/10 bg-navy/50 text-mist hover:border-white/30 hover:text-cream'
-              }`}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '1rem',
+                borderRadius: 12,
+                border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                background: isSelected ? 'var(--accent-dim)' : 'var(--bg-raised)',
+                color: isSelected ? 'var(--accent)' : 'var(--text-2)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 12,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => {
+                if (!isSelected) {
+                  e.currentTarget.style.borderColor = 'var(--accent)'
+                  e.currentTarget.style.color = 'var(--text)'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isSelected) {
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.color = 'var(--text-2)'
+                }
+              }}
             >
-              <span className={`font-bold uppercase w-5 flex-shrink-0 ${isSelected ? 'text-gold' : 'text-mist'}`}>
+              <span style={{
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                width: 20,
+                flexShrink: 0,
+                color: isSelected ? 'var(--accent)' : 'var(--text-3)',
+              }}>
                 {opt}
               </span>
-              <span className="leading-relaxed">{text}</span>
+              <span style={{ lineHeight: 1.6 }}>{text}</span>
             </button>
           )
         })}
       </div>
 
       {selectedAnswer && (
-        <div className="mt-4 space-y-3">
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {!explanation && (
             <button
               onClick={fetchExplanation}
               disabled={explaining}
-              className="w-full py-2.5 rounded-xl border border-gold/40 text-gold text-sm font-medium hover:bg-gold/10 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: 12,
+                border: '1px solid var(--accent)',
+                background: 'transparent',
+                color: 'var(--accent)',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                opacity: explaining ? 0.6 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { if (!explaining) e.currentTarget.style.background = 'var(--accent-dim)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
               {explaining ? (
-                <><span className="animate-spin text-base">⟳</span>Generating explanation…</>
+                <>
+                  <span style={{ animation: 'spin 0.6s linear infinite' }}>⟳</span>
+                  Generating explanation…
+                </>
               ) : (
                 <>🧠 Explain this question</>
               )}
@@ -120,10 +176,15 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
           )}
 
           {explanation && (
-            <div className="rounded-xl border border-gold/30 bg-gold/5 p-4 text-sm">
+            <div style={{
+              borderRadius: 12,
+              border: '1px solid var(--accent)',
+              background: 'var(--accent-dim)',
+              padding: '1rem',
+            }}>
               <div
-                className="text-cream leading-relaxed space-y-1"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(explanation) }}
+                style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.7 }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(stripMarker(explanation)) }}
               />
             </div>
           )}
@@ -131,7 +192,29 @@ export default function QuestionCard({ question, selectedAnswer, onAnswer, quest
           {isWrong && (
             <button
               onClick={handleStudyTopic}
-              className="w-full py-2.5 rounded-xl border border-white/20 text-mist text-sm hover:border-gold/40 hover:text-gold transition-all flex items-center justify-center gap-2"
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: 12,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-2)',
+                fontSize: 13,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent)'
+                e.currentTarget.style.color = 'var(--accent)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border)'
+                e.currentTarget.style.color = 'var(--text-2)'
+              }}
             >
               📚 Study {question.sourceTopic ? `"${question.sourceTopic}"` : 'this topic'} →
             </button>

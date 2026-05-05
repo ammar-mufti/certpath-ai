@@ -641,8 +641,6 @@ export default {
       const certFullName = body.certFullName ?? 'Certified Customer Experience Professional'
       const certIssuer = body.certIssuer ?? 'CXPA'
       const passingScore = body.passingScore ?? 70
-      const difficulty = body.difficulty ?? 'Advanced'
-      const examQuestions = body.examQuestions ?? 100
 
       // â”€â”€ STAGE 1: Domain snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (body.type === 'stage1-summary') {

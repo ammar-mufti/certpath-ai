@@ -24,7 +24,6 @@ export default function LearnHome() {
   const userId     = useAuthStore.getState().user?.id ?? 'anonymous'
   const examDateKey = `${userId}_${certId}_exam_date`
   const examDate   = localStorage.getItem(examDateKey)
-  const daysLeft   = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86_400_000) : null
 
   const overallProgress = cert.domains.length > 0
     ? Math.round(cert.domains.reduce((s, d) => s + getDomainProgress(certId ?? '', d.name), 0) / cert.domains.length)
@@ -113,9 +112,9 @@ export default function LearnHome() {
                 <p style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 14 }}>
                   {cert.examQuestions}Q · Pass {cert.passingScore}%
                 </p>
-                {daysLeft !== null && (
-                  <p style={{ fontSize: 12, marginTop: 2, color: daysLeft <= 2 ? 'var(--error)' : 'var(--text-3)' }}>
-                    {daysLeft}d until exam
+                {examDate && (
+                  <p style={{ fontSize: 12, marginTop: 2, color: 'var(--text-3)' }}>
+                    Exam: {new Date(examDate).toLocaleDateString()}
                   </p>
                 )}
               </div>

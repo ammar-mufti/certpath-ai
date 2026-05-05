@@ -25,7 +25,7 @@ export default function LoadingScreen({ certId }: Props) {
   })
   const [stuck, setStuck] = useState(false)
 
-  const lastUpdateRef = useRef(Date.now())
+  const lastUpdateRef = useRef(0)
   const collectedRef = useRef(0)
   const generatedRef = useRef<ReturnType<typeof generateForMode> | null>(null)
 

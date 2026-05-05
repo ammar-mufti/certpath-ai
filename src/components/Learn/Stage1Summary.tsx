@@ -1,4 +1,5 @@
 import type { Stage1Summary } from '../../types/content'
+import { stripMarker } from '../../utils/stripMarker'
 
 interface Props {
   data: Stage1Summary
@@ -6,37 +7,41 @@ interface Props {
 
 export default function Stage1Summary({ data }: Props) {
   return (
-    <div className="bg-ink rounded-2xl border border-white/10 p-6 space-y-5">
-      <div className="flex items-start justify-between gap-4">
+    <div className="card" style={{ padding: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <div className="text-xs font-bold uppercase tracking-widest text-mist mb-1">Domain Snapshot</div>
-          <p className="text-cream text-base leading-relaxed">{data.tagline}</p>
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 4 }}>Domain Snapshot</div>
+          <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.7 }}>{data.tagline}</p>
         </div>
-        <span className="text-xs px-2.5 py-1 rounded-full bg-gold/20 text-gold font-medium whitespace-nowrap flex-shrink-0">
+        <span style={{
+          fontSize: 11, padding: '3px 10px', borderRadius: 9999,
+          background: 'var(--accent-dim)', color: 'var(--accent)',
+          fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
           {data.examWeight}
         </span>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
         <div>
-          <div className="text-xs font-bold uppercase tracking-widest text-gold mb-2">⚡ Must Know</div>
-          <ul className="space-y-1.5">
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>⚡ Must Know</div>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {data.mustKnow.map((item, i) => (
-              <li key={i} className="flex gap-2 text-sm text-mist leading-relaxed">
-                <span className="text-gold flex-shrink-0 mt-0.5">•</span>
-                <span>{item}</span>
+              <li key={i} style={{ display: 'flex', gap: 8, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                <span style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 3, fontSize: 10 }}>●</span>
+                <span>{stripMarker(item)}</span>
               </li>
             ))}
           </ul>
         </div>
 
         <div>
-          <div className="text-xs font-bold uppercase tracking-widest text-warn mb-2">⚠️ Common Mistakes</div>
-          <ul className="space-y-1.5">
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--error)', marginBottom: 8 }}>⚠️ Common Mistakes</div>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {data.commonMistakes.map((item, i) => (
-              <li key={i} className="flex gap-2 text-sm text-mist leading-relaxed">
-                <span className="text-warn flex-shrink-0 mt-0.5">•</span>
-                <span>{item}</span>
+              <li key={i} style={{ display: 'flex', gap: 8, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                <span style={{ color: 'var(--error)', flexShrink: 0, marginTop: 3, fontSize: 10 }}>●</span>
+                <span>{stripMarker(item)}</span>
               </li>
             ))}
           </ul>
@@ -44,12 +49,12 @@ export default function Stage1Summary({ data }: Props) {
       </div>
 
       {data.connectedDomains && data.connectedDomains.length > 0 && (
-        <div>
-          <div className="text-xs font-bold uppercase tracking-widest text-mist mb-2">🔗 Connected To</div>
-          <ul className="space-y-1">
+        <div style={{ marginTop: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>🔗 Connected To</div>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {data.connectedDomains.map((item, i) => (
-              <li key={i} className="text-sm text-mist leading-relaxed flex gap-2">
-                <span className="text-mist/40 flex-shrink-0">→</span>
+              <li key={i} style={{ display: 'flex', gap: 8, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                <span style={{ color: 'var(--text-3)', flexShrink: 0, marginTop: 2 }}>→</span>
                 <span>{item}</span>
               </li>
             ))}

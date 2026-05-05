@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { callLLM } from '../../services/llm'
 import type { Question } from '../../store/examStore'
 import { useLearnStore } from '../../store/learnStore'
 import { useAuthStore } from '../../store/authStore'
+import { stripMarker } from '../../utils/stripMarker'
 
 interface Tip { domain: string; tips: string[] }
 
@@ -14,10 +15,10 @@ interface Props {
 
 export default function StudyPlan({ questions, answers }: Props) {
   const [plan, setPlan] = useState<Tip[] | null>(null)
-  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { setActiveDomain } = useLearnStore()
   const token = useAuthStore(s => s.token) ?? ''
+  const startedRef = useRef(false)
 
   const weakDomains = (() => {
     const domains = [...new Set(questions.map(q => q.domain))]
@@ -33,8 +34,8 @@ export default function StudyPlan({ questions, answers }: Props) {
   })()
 
   useEffect(() => {
-    if (weakDomains.length === 0) return
-    setLoading(true)
+    if (weakDomains.length === 0 || startedRef.current) return
+    startedRef.current = true
     callLLM({
       type: 'study-plan',
       domain: weakDomains.join(','),
@@ -56,7 +57,6 @@ export default function StudyPlan({ questions, answers }: Props) {
           'Study the CXPA body of knowledge for this area',
         ],
       })))
-      setLoading(false)
     }).catch(() => {
       setPlan(weakDomains.map(d => ({
         domain: d,
@@ -66,19 +66,20 @@ export default function StudyPlan({ questions, answers }: Props) {
           'Study the CXPA body of knowledge for this area',
         ],
       })))
-      setLoading(false)
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, weakDomains.length])
 
   function goStudy(domain: string) {
     setActiveDomain(domain)
     navigate('/learn/' + encodeURIComponent(domain))
   }
 
-  if (loading) {
+  const isLoading = plan === null && weakDomains.length > 0
+
+  if (isLoading) {
     return (
-      <div className="text-center py-6">
-        <div className="text-mist animate-pulse text-sm">Generating personalized study plan…</div>
+      <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+        <div style={{ color: 'var(--text-2)', fontSize: 13, animation: 'pulse 1.5s ease-in-out infinite' }}>Generating personalized study plan…</div>
       </div>
     )
   }
@@ -87,21 +88,24 @@ export default function StudyPlan({ questions, answers }: Props) {
 
   return (
     <div>
-      <h3 className="text-cream font-semibold mb-4">Personalized Study Plan</h3>
-      <div className="space-y-4">
+      <h3 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 16 }}>Personalized Study Plan</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {plan.map(({ domain, tips }) => (
-          <div key={domain} className="bg-ink rounded-xl border border-white/10 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-cream font-medium">{domain}</h4>
-              <button onClick={() => goStudy(domain)} className="text-gold text-xs hover:underline">
+          <div key={domain} className="card" style={{ padding: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h4 style={{ color: 'var(--text)', fontWeight: 500, fontSize: 14 }}>{domain}</h4>
+              <button
+                onClick={() => goStudy(domain)}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}
+              >
                 Study this domain →
               </button>
             </div>
-            <ul className="space-y-1.5">
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {tips.map((tip, i) => (
-                <li key={i} className="text-mist text-sm flex gap-2">
-                  <span className="text-gold">•</span>
-                  {tip}
+                <li key={i} style={{ display: 'flex', gap: 8, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                  <span style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2, fontSize: 10 }}>●</span>
+                  {stripMarker(tip)}
                 </li>
               ))}
             </ul>

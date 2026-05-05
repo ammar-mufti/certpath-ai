@@ -156,13 +156,13 @@ export default function DomainPage({ certId }: Props) {
   useEffect(() => {
     if (!autoExpandTopic || !s2.data) return
     setTimeout(() => { handleTopicExpand(autoExpandTopic); setAutoExpandTopic(null) }, 300)
-  }, [autoExpandTopic, s2.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoExpandTopic, s2.data])
 
   useEffect(() => {
     const handler = (e: CustomEvent) => { handleTopicExpand(e.detail.topic) }
     window.addEventListener('expand-topic', handler as EventListener)
     return () => window.removeEventListener('expand-topic', handler as EventListener)
-  }, [s2.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [s2.data])
 
   if (!domain || !certDomain) return null
 
