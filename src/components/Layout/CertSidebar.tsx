@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { getCert } from '../../data/certifications'
 import { useLearnStore } from '../../store/learnStore'
@@ -68,8 +69,37 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
   const isActive = (path: string) => location.pathname.startsWith(path)
   const domainSlug = location.pathname.split('/learn/')[1]?.split('/')[0] ?? ''
 
+  const [activeTopic, setActiveTopic] = useState<string | null>(null)
+  const topicRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const sidebarRef = useRef<HTMLDivElement | null>(null)
+
+  const scrollToTopic = useCallback((topic: string) => {
+    setActiveTopic(topic)
+    setTimeout(() => {
+      const el = topicRefs.current[topic]
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }, 100)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      scrollToTopic(e.detail.topic)
+    }
+    window.addEventListener('expand-topic', handler as EventListener)
+    return () => window.removeEventListener('expand-topic', handler as EventListener)
+  }, [scrollToTopic])
+
   return (
-    <>
+    <div ref={sidebarRef} style={{
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '1rem 0.75rem',
+      gap: 2,
+      height: '100%',
+      overflowY: 'auto',
+    }}>
       {/* Cert header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
@@ -166,13 +196,23 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                       fontSize: 12, fontWeight: 500,
                       color: active ? 'var(--accent)' : 'var(--text-2)',
                       overflow: 'hidden', textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap', maxWidth: 130,
+                      whiteSpace: 'nowrap', maxWidth: 110,
                     }}>
                       {d.name}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>
-                      {d.percentage}%
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        {d.percentage}%
+                      </span>
+                      <span className="material-symbols-outlined" style={{
+                        fontSize: 14,
+                        color: 'var(--text-3)',
+                        transform: active ? 'rotate(90deg)' : 'rotate(0)',
+                        transition: 'transform 0.2s',
+                      }}>
+                        chevron_right
+                      </span>
+                    </div>
                   </div>
                   <div style={{
                     height: 3, background: 'var(--border)',
@@ -187,7 +227,7 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                   </div>
                 </button>
 
-                {/* Topic list when domain is active */}
+                {/* Topic list when domain is active and not collapsed */}
                 {active && d.topics.length > 0 && (
                   <div style={{
                     marginLeft: 12, paddingLeft: 10,
@@ -197,17 +237,26 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                   }}>
                     {d.topics.map(topic => {
                       const isRead = readTopics.includes(topic)
+                      const isActiveTopic = activeTopic === topic
                       return (
                         <button
                           key={topic}
+                          ref={el => { topicRefs.current[topic] = el }}
                           style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
+                            background: isActiveTopic ? 'var(--accent-dim)' : 'transparent',
+                            border: isActiveTopic ? '1px solid var(--accent)' : '1px solid transparent',
+                            borderRadius: 4,
+                            cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '3px 0', fontSize: 11,
-                            color: isRead ? 'var(--text-3)' : 'var(--text-2)',
+                            padding: '3px 6px', fontSize: 11,
+                            color: isActiveTopic ? 'var(--accent)' : isRead ? 'var(--text-3)' : 'var(--text-2)',
+                            fontWeight: isActiveTopic ? 600 : 400,
                             textAlign: 'left',
+                            transition: 'all 0.15s',
+                            width: 'calc(100% + 2px)',
                           }}
                           onClick={() => {
+                            scrollToTopic(topic)
                             const targetPath = `/${certId}/learn/${slug}`
                             if (location.pathname === targetPath || location.pathname.startsWith(targetPath + '/')) {
                               window.dispatchEvent(new CustomEvent('expand-topic', { detail: { topic } }))
@@ -216,14 +265,30 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
                               navigate(targetPath)
                             }
                           }}
+                          onMouseEnter={e => {
+                            if (!isActiveTopic) {
+                              e.currentTarget.style.background = 'var(--bg-raised)'
+                              e.currentTarget.style.color = 'var(--text)'
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (!isActiveTopic) {
+                              e.currentTarget.style.background = 'transparent'
+                              e.currentTarget.style.color = isRead ? 'var(--text-3)' : 'var(--text-2)'
+                            }
+                          }}
                         >
                           <span style={{
                             width: 14, flexShrink: 0, textAlign: 'center',
-                            color: isRead ? 'var(--success)' : 'var(--border)', fontSize: 10,
+                            color: isActiveTopic ? 'var(--accent)' : isRead ? 'var(--success)' : 'var(--border)', fontSize: 10,
                           }}>
-                            {isRead ? '✓' : '○'}
+                            {isActiveTopic ? '●' : isRead ? '✓' : '○'}
                           </span>
-                          <span style={{ textDecoration: isRead ? 'line-through' : 'none', opacity: isRead ? 0.6 : 1 }}>
+                          <span style={{
+                            textDecoration: isRead && !isActiveTopic ? 'line-through' : 'none',
+                            opacity: isRead && !isActiveTopic ? 0.6 : 1,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
                             {topic}
                           </span>
                         </button>
@@ -256,6 +321,6 @@ export function CertSidebar({ onOpenTutor }: CertSidebarProps) {
           All Certifications
         </button>
       </div>
-    </>
+    </div>
   )
 }
