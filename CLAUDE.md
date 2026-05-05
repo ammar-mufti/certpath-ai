@@ -40,9 +40,7 @@ Plus `USER_KV` KV namespace binding (defined in `worker/wrangler.jsonc`).
 - **Styling:** AcademiaAI design system using CSS variables in `src/index.css` (`var(--bg)`, `var(--accent)`, etc.) with utility classes (`.card`, `.btn`, `.input`). Tailwind CSS installed but not used for component styling — prefer CSS vars + utility classes. Theme toggle via `src/context/ThemeContext`.
 
 ### Auth Flow
-Custom JWT auth — no Firebase. The worker signs tokens with HMAC-SHA256 via the Web Crypto API and stores user records in Cloudflare KV (`user_${email}`). Three providers: GitHub OAuth, Google OAuth, email/password (rate-limited: 5 failed attempts per 15 min).
-
-**Lifecycle:** OAuth/Email → worker signs JWT → redirects to `/login?token=...` → `LoginPage` parses token → `authStore.setAuth(user, token)` → stored in `localStorage` as `ccxp_jwt` → `authStore.init()` reads on startup → `ProtectedRoute` gates routes → logout clears `localStorage`. Admin access: worker compares JWT email to `ADMIN_EMAIL`, frontend reads `user.isAdmin`.
+Custom JWT auth — no Firebase. The worker signs tokens with HMAC-SHA256 via the Web Crypto API and stores user records in Cloudflare KV (`user_${email}`). Tokens are kept in `localStorage` (`ccxp_jwt`). Three providers: GitHub OAuth, Google OAuth, email/password (rate-limited: 5 failed attempts per 15 min). `src/services/auth.ts` parses/validates JWTs on the frontend; `src/store/authStore.ts` holds the live user state.
 
 ### LLM / Content Generation
 All LLM calls are proxied through the worker (`POST /api/llm`) to protect the Groq API key. The worker uses `llama-3.3-70b-versatile` with a fallback cascade to smaller Groq models and exponential backoff on 429s. `src/hooks/useStageContent.ts` is the sole content fetch hook; `src/hooks/useQuestionGen.ts` handles exam question generation. Both call `extractJson()` from `src/services/llm.ts` for LLM response parsing. Results are cached in localStorage via `src/services/contentCache.ts` — generated content is never re-fetched for the same cert/domain key. All stages have fallback static content so the UI never renders empty.
@@ -52,21 +50,6 @@ Four-stage progressive learning per domain: Summary → Concepts → Deep Dive �
 
 ### Routing
 `src/App.tsx` sets up three route layers: public (`/`, `/login`), protected (all cert routes via `<ProtectedRoute>`), and admin (`/admin` via `<AdminRoute>`). Cert-scoped routes use `/:certId/` prefix. Legacy CCXP-only URLs redirect to the cert-generic equivalents. A `MaintenanceGate` component wraps the whole app and blocks non-admins when the worker's `/api/health` endpoint returns maintenance mode.
-
-### Layout Hierarchy
-```
-TopNav (fixed, z-100, height 56) — rendered inside every page
-  ├─ Logo, Cert badge + switcher, Nav tabs (Study/Exam/History), Theme toggle, User menu
-
-AppShell (sidebar + main wrapper, paddingTop 56)
-  ├─ <aside> fixed left sidebar (220px) — CertSidebar
-  ├─ <main> scrollable content (marginLeft 220px)
-  ├─ <TutorChat> sliding panel (z-201, backdrop z-200)
-  └─ Floating tutor button (bottom-right, when sidebar hidden)
-
-MobileBottomNav (fixed bottom, z-40, 5 tabs)
-```
-`TopNav` renders itself inside each page. `AppShell` wraps page content. `TutorChat` is rendered **only** by `AppShell`.
 
 ### TutorChat Architecture
 `TutorChat` is a controlled sliding panel managed by `AppShell` (holds `tutorOpen` state, renders `<TutorChat>`). The `CertSidebar` receives `onOpenTutor` via `React.cloneElement`. Mobile nav triggers it via `window.dispatchEvent(new CustomEvent('certpath-open-tutor'))`. The old pattern of `TutorChat` managing its own open state is deprecated.
@@ -81,28 +64,6 @@ Key endpoints in `worker/src/index.ts`:
 
 ### Deployment
 Frontend auto-deploys to GitHub Pages from `main` via `.github/workflows/`. Worker deploys manually with `npx wrangler deploy` from `worker/`.
-
-### Exam Data Flow
-```
-ConfigScreen → setMode(mode, domain?) → examStore.setMode()
-  ↓
-ExamPage navigates to /exam/loading
-  ↓
-LoadingScreen → useQuestionGen → POST /api/llm (type: generate-questions)
-  ↓
-LLM returns JSON → questionBank.save() → examStore.setQuestions()
-  ↓
-ExamPage navigates to /exam/question → QuestionCard one at a time
-  ↓
-User answers → examStore.answerQuestion(id, answer)
-  ↓
-Submit/timer expire → examStore.submitExam() → /:certId/results
-  ↓
-HistoryPage reads from historyStore (localStorage: ${userId}_exam_history)
-```
-- `setMode()` clears all prior answers/questions — always called before generating
-- Retake flow skips LLM: reads from `questionBank` directly, Fisher-Yates shuffle
-- Timer durations: full=3h, mini=1h, domain=30min (stored in sessionStorage `certpath_timer_seconds`)
 
 ## Key Conventions
 
@@ -131,7 +92,7 @@ HistoryPage reads from historyStore (localStorage: ${userId}_exam_history)
 - /design-taste-frontend — component architecture
 - /impeccable — design audit and polish
 - /high-end-visual-design — premium visual upgrades
-- Always use CSS variables (`var(--accent)`, `var(--bg-card)`, etc.) and utility classes (`.card`, `.btn`, `.input`). Never raw hex values.
+- Always use Tailwind domain-color tokens, never raw hex
 
 ### Before touching unfamiliar code:
 - /smart-explore — token-optimized code search
