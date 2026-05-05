@@ -7,6 +7,7 @@ import { stripMarker } from '../../utils/stripMarker'
 interface Props {
   data: Stage3DeepDive
   topic: string
+  domain: string
 }
 
 function StepAccordion({ steps, certId, domain, topic }: { steps: string[]; certId: string; domain: string; topic: string }) {
@@ -245,7 +246,7 @@ function ScenarioDecision({ data }: { data: Stage3DeepDive['examScenario'] & { s
   )
 }
 
-export default function Stage3DeepDive({ data, topic }: Props) {
+export default function Stage3DeepDive({ data, topic, domain }: Props) {
   const { certId } = useParams<{ certId: string }>()
   const resolvedCertId = certId ?? 'ccxp'
 
@@ -272,7 +273,7 @@ export default function Stage3DeepDive({ data, topic }: Props) {
       </div>
 
       {/* How It Works - Accordion */}
-      <StepAccordion steps={data.howItWorks} certId={resolvedCertId} domain={topic} topic={topic} />
+      <StepAccordion steps={data.howItWorks} certId={resolvedCertId} domain={domain} topic={topic} />
 
       {/* Real World Scenario - Interactive */}
       <ScenarioDecision data={{ ...data.examScenario, scenario: data.realWorldExample }} />

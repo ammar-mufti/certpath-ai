@@ -269,7 +269,7 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
                 </div>
               )}
               {deepDive && !deepLoading && (
-                <Stage3DeepDiveComponent data={deepDive} topic={topic.topic} />
+                <Stage3DeepDiveComponent data={deepDive} topic={topic.topic} domain={domain} />
               )}
             </div>
           )}
