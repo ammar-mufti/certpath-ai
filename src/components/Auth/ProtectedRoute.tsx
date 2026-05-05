@@ -6,8 +6,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-navy flex items-center justify-center">
-        <div className="text-gold text-lg animate-pulse">Loading…</div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: 'var(--accent)', fontSize: '1.125rem', animation: 'pulse 1.5s ease-in-out infinite' }}>Loading…</div>
       </div>
     )
   }

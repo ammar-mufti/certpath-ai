@@ -52,20 +52,22 @@ export default function PageNav({ sections, activeDomain }: Props) {
     : 0
 
   return (
-    <div className="w-full py-5 px-4 flex flex-col gap-5">
-      {/* On This Page */}
+    <div style={{ width: '100%', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
-        <p className="text-xs font-semibold text-mist/60 uppercase tracking-wider mb-3">On This Page</p>
-        <div className="space-y-1">
+        <p className="label" style={{ marginBottom: 12 }}>On This Page</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {sections.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => scrollTo(id)}
-              className={`w-full text-left text-xs py-1.5 px-2 rounded-md transition-colors ${
-                activeSection === id
-                  ? 'text-gold bg-gold/10'
-                  : 'text-mist hover:text-cream hover:bg-white/5'
-              }`}
+              style={{
+                width: '100%', textAlign: 'left', fontSize: 12, padding: '6px 8px', borderRadius: 6,
+                transition: 'all 0.15s', border: 'none', cursor: 'pointer',
+                color: activeSection === id ? 'var(--accent)' : 'var(--text-2)',
+                background: activeSection === id ? 'var(--accent-dim)' : 'transparent',
+              }}
+              onMouseEnter={e => { if (activeSection !== id) { e.currentTarget.style.background = 'var(--bg-raised)'; e.currentTarget.style.color = 'var(--text)' } }}
+              onMouseLeave={e => { if (activeSection !== id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)' } }}
             >
               {label}
             </button>
@@ -73,24 +75,22 @@ export default function PageNav({ sections, activeDomain }: Props) {
         </div>
       </div>
 
-      {/* Domain progress mini-card */}
       {activeDomain && (
-        <div className="border-t border-white/10 pt-4">
-          <p className="text-xs font-semibold text-mist/60 uppercase tracking-wider mb-3">This Domain</p>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-mist">Readiness</span>
-              <span className="text-xs font-bold text-gold">{domainProgress}%</span>
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <p className="label" style={{ marginBottom: 12 }}>This Domain</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Readiness</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{domainProgress}%</span>
             </div>
-            <div className="h-1.5 bg-white/10 rounded-full">
+            <div style={{ height: 6, background: 'var(--border)', borderRadius: 'var(--r-full)' }}>
               <div
-                className="h-1.5 rounded-full bg-gold transition-all"
-                style={{ width: `${domainProgress}%` }}
+                style={{ height: 6, borderRadius: 'var(--r-full)', background: 'var(--accent)', transition: 'width 0.5s', width: `${domainProgress}%` }}
               />
             </div>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-mist">Topics read</span>
-              <span className="text-xs text-cream">{topicsRead.length} / {topicCount}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Topics read</span>
+              <span style={{ fontSize: 12, color: 'var(--text)' }}>{topicsRead.length} / {topicCount}</span>
             </div>
           </div>
         </div>

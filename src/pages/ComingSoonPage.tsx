@@ -32,39 +32,39 @@ export default function ComingSoonPage() {
   }
 
   return (
-    <div className="min-h-screen bg-navy">
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <TopNav />
-      <div className="max-w-lg mx-auto px-4 py-20 text-center">
-        <div className="text-6xl mb-6 grayscale opacity-60">{cert.icon}</div>
-        <h1 className="font-serif text-3xl text-cream mb-2">{cert.name}</h1>
-        <p className="text-mist mb-1">{cert.fullName}</p>
-        <p className="text-mist/50 text-sm mb-10">Issued by {cert.issuer}</p>
+      <div style={{ maxWidth: 512, marginLeft: 'auto', marginRight: 'auto', padding: '5rem 1rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '3.75rem', marginBottom: 24, filter: 'grayscale(1)', opacity: 0.6 }}>{cert.icon}</div>
+        <h1 style={{ fontFamily: 'Noto Serif, Georgia, serif', fontSize: '1.875rem', color: 'var(--text)', marginBottom: 8 }}>{cert.name}</h1>
+        <p style={{ color: 'var(--text-2)', marginBottom: 4 }}>{cert.fullName}</p>
+        <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 40 }}>Issued by {cert.issuer}</p>
 
-        <div className="bg-ink border border-white/10 rounded-2xl p-8 mb-6">
-          <h2 className="text-cream font-semibold text-lg mb-3">This certification is coming soon to CertPath AI</h2>
-          <p className="text-mist text-sm mb-6 leading-relaxed">
+        <div className="card" style={{ padding: '2rem', marginBottom: 24 }}>
+          <h2 style={{ color: 'var(--text)', fontWeight: 600, fontSize: '1.125rem', marginBottom: 12 }}>This certification is coming soon to CertPath AI</h2>
+          <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>
             We're building comprehensive study content for {cert.name}.
             Join the waitlist to be notified when it launches.
           </p>
 
           {saved ? (
-            <div className="flex items-center justify-center gap-2 text-pass">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--success)' }}>
               <span>✓</span>
-              <span className="font-semibold">You're on the list! We'll notify you when {cert.name} launches.</span>
+              <span style={{ fontWeight: 600 }}>You're on the list! We'll notify you when {cert.name} launches.</span>
             </div>
           ) : (
-            <form onSubmit={handleNotify} className="flex flex-col sm:flex-row gap-3">
+            <form onSubmit={handleNotify} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input
                 type="email"
                 placeholder="your@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="flex-1 bg-navy border border-white/20 rounded-xl px-4 py-2.5 text-cream text-sm focus:outline-none focus:border-gold/60 placeholder-mist/50"
+                className="input"
               />
               <button
                 type="submit"
-                className="bg-gold text-navy font-bold px-6 py-2.5 rounded-xl hover:bg-amber-400 transition-colors text-sm"
+                className="btn btn-primary"
               >
                 Notify Me →
               </button>
@@ -74,7 +74,9 @@ export default function ComingSoonPage() {
 
         <button
           onClick={() => navigate('/dashboard')}
-          className="text-mist hover:text-cream text-sm transition-colors"
+          style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer', transition: 'color 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-2)' }}
         >
           ← Back to Dashboard
         </button>

@@ -63,12 +63,13 @@ export default function LoadingScreen({ certId }: Props) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-navy flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
-          <div className="text-fail text-lg mb-4">{error}</div>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
+        <div style={{ textAlign: 'center', maxWidth: 384 }}>
+          <div style={{ color: 'var(--error)', fontSize: '1.25rem', marginBottom: 16 }}>{error}</div>
           <button
             onClick={() => navigate(`/${certId}/exam`)}
-            className="bg-gold text-navy font-bold px-6 py-2 rounded-lg hover:bg-amber-400 transition-colors"
+            className="btn btn-primary"
+            style={{ padding: '8px 24px', fontWeight: 700 }}
           >
             Try Again
           </button>
@@ -80,32 +81,33 @@ export default function LoadingScreen({ certId }: Props) {
   const barWidth = Math.min(progress.percent, 100)
 
   return (
-    <div className="min-h-screen bg-navy flex items-center justify-center px-4">
-      <div className="text-center max-w-sm w-full">
-        <div className="text-gold text-4xl font-serif mb-2">{cert?.icon}</div>
-        <div className="text-cream text-lg font-bold mb-1">{cert?.name ?? certId}</div>
-        <div className="text-cream text-base mb-2 animate-pulse">{progress.message}</div>
-        <div className="text-mist text-sm mb-6">
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
+      <div style={{ textAlign: 'center', maxWidth: 384, width: '100%' }}>
+        <div style={{ fontSize: '2.25rem', fontFamily: 'Noto Serif, Georgia, serif', marginBottom: 8, color: 'var(--accent)' }}>{cert?.icon}</div>
+        <div style={{ color: 'var(--text)', fontSize: '1.25rem', fontWeight: 700, marginBottom: 4 }}>{cert?.name ?? certId}</div>
+        <div style={{ color: 'var(--text)', fontSize: 15, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }}>{progress.message}</div>
+        <div style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 24 }}>
           {progress.collected} / {progress.total} questions ready
         </div>
-        <div className="w-full bg-ink rounded-full h-2">
+        <div className="progress-bar" style={{ height: 8 }}>
           <div
-            className="bg-gold h-2 rounded-full transition-all duration-500"
-            style={{ width: `${barWidth}%` }}
+            className="progress-fill"
+            style={{ width: `${barWidth}%`, transitionDuration: '500ms' }}
           />
         </div>
-        <div className="text-mist text-xs mt-2">{progress.percent}%</div>
+        <div style={{ color: 'var(--text-2)', fontSize: 11, marginTop: 8 }}>{progress.percent}%</div>
 
         {stuck && progress.collected > 0 && (
-          <div className="mt-8 bg-ink border border-warn/30 rounded-xl p-4 text-left space-y-3">
-            <p className="text-warn text-sm font-semibold">Taking longer than usual…</p>
-            <p className="text-mist text-xs">
+          <div className="card" style={{ marginTop: 32, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <p style={{ color: 'var(--error)', fontSize: 13, fontWeight: 600 }}>Taking longer than usual…</p>
+            <p style={{ color: 'var(--text-2)', fontSize: 11 }}>
               {progress.collected} questions generated so far. You can start now or keep waiting.
             </p>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => navigate(`/${certId}/exam`)}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-mist text-xs hover:text-cream transition-colors"
+                className="btn btn-ghost"
+                style={{ flex: 1, fontSize: 11 }}
               >
                 Cancel
               </button>
@@ -122,7 +124,8 @@ export default function LoadingScreen({ certId }: Props) {
                   })
                   navigate(`/${certId}/exam/question`)
                 }}
-                className="flex-1 py-2 rounded-lg bg-gold text-navy text-xs font-bold hover:bg-amber-400 transition-colors"
+                className="btn btn-primary"
+                style={{ flex: 1, fontSize: 11 }}
               >
                 Start with {progress.collected} questions
               </button>

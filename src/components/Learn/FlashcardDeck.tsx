@@ -21,54 +21,55 @@ export default function FlashcardDeck({ flashcards, knownIndices, onMarkKnown }:
   function prev() { setFlipped(false); setTimeout(() => setCurrent(c => (c - 1 + flashcards.length) % flashcards.length), 150) }
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex items-center justify-between w-full max-w-lg mb-4">
-        <span className="text-mist text-sm">{current + 1} / {flashcards.length}</span>
-        <span className="text-pass text-sm">{known} known</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: 512, marginBottom: 16 }}>
+        <span style={{ color: 'var(--text-2)', fontSize: 13 }}>{current + 1} / {flashcards.length}</span>
+        <span style={{ color: 'var(--success)', fontSize: 13 }}>{known} known</span>
       </div>
 
-      {/* Flip card */}
-      <div className="flip-card w-full max-w-lg h-52 cursor-pointer" onClick={() => setFlipped(!flipped)}>
+      <div className="flip-card w-full max-w-lg h-52" onClick={() => setFlipped(!flipped)} style={{ cursor: 'pointer' }}>
         <div className={`flip-card-inner w-full h-full ${flipped ? 'flipped' : ''}`}>
-          <div className="flip-card-front w-full h-full bg-ink border border-white/20 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-            <div className="text-mist text-xs uppercase tracking-widest mb-3">Question</div>
-            <p className="text-cream text-lg font-medium leading-relaxed">{card.front}</p>
-            <p className="text-mist text-xs mt-4">Tap to reveal</p>
+          <div className="flip-card-front w-full h-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+            <div style={{ color: 'var(--text-2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Question</div>
+            <p style={{ color: 'var(--text)', fontSize: '1.125rem', fontWeight: 500, lineHeight: 1.7 }}>{card.front}</p>
+            <p style={{ color: 'var(--text-2)', fontSize: 11, marginTop: 16 }}>Tap to reveal</p>
           </div>
-          <div className="flip-card-back w-full h-full bg-gold/10 border border-gold/40 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-            <div className="text-gold text-xs uppercase tracking-widest mb-3">Answer</div>
-            <p className="text-cream text-base leading-relaxed">{card.back}</p>
-            {card.why && <p className="text-mist text-xs mt-3 italic">{card.why}</p>}
+          <div className="flip-card-back w-full h-full" style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.4)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+            <div style={{ color: 'var(--accent)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Answer</div>
+            <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.7 }}>{card.back}</p>
+            {card.why && <p style={{ color: 'var(--text-2)', fontSize: 11, marginTop: 12, fontStyle: 'italic' }}>{card.why}</p>}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-6">
-        <button onClick={prev} className="px-4 py-2 rounded-lg bg-white/10 text-mist hover:bg-white/20 text-sm transition-colors">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 24 }}>
+        <button onClick={prev} className="btn btn-ghost" style={{ fontSize: 13, padding: '8px 16px' }}>
           ← Prev
         </button>
         <button
           onClick={() => { onMarkKnown(current); next() }}
           disabled={isKnown}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-            isKnown ? 'bg-pass/20 text-pass cursor-default' : 'bg-pass text-white hover:bg-green-600'
-          }`}
+          className={isKnown ? "btn" : "btn btn-primary"}
+          style={{
+            fontSize: 13, padding: '8px 20px', fontWeight: 500,
+            ...(isKnown ? { background: 'rgba(var(--success),0.2)', color: 'var(--success)', cursor: 'default' } : {}),
+          }}
         >
           {isKnown ? '✓ Known' : 'I know this'}
         </button>
-        <button onClick={next} className="px-4 py-2 rounded-lg bg-white/10 text-mist hover:bg-white/20 text-sm transition-colors">
+        <button onClick={next} className="btn btn-ghost" style={{ fontSize: 13, padding: '8px 16px' }}>
           Next →
         </button>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex gap-1.5 mt-4 flex-wrap justify-center max-w-sm">
+      <div style={{ display: 'flex', gap: 6, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 320 }}>
         {flashcards.map((_, i) => (
           <div
             key={i}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              i === current ? 'bg-gold' : knownIndices.includes(i) ? 'bg-pass' : 'bg-white/20'
-            }`}
+            style={{
+              width: 8, height: 8, borderRadius: '50%', transition: 'all 0.15s',
+              ...(i === current ? { background: 'var(--accent)' } : knownIndices.includes(i) ? { background: 'var(--success)' } : { background: 'var(--bg-raised)' }),
+            }}
           />
         ))}
       </div>

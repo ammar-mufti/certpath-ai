@@ -26,52 +26,52 @@ export default function TopicCard({ topic, onRead, isRead }: Props) {
       }, 1000)
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [expanded, isRead]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expanded, isRead])
 
   return (
-    <div className={`bg-ink rounded-xl border transition-all ${isRead ? 'border-pass/30' : 'border-white/10'}`}>
+    <div className="card" style={{ transition: 'all 0.15s', borderColor: isRead ? 'var(--success)' : 'var(--border)' }}>
       <button
-        className="w-full text-left p-4 flex items-center justify-between"
+        style={{ width: '100%', textAlign: 'left', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', background: 'transparent', cursor: 'pointer' }}
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-3">
-          {isRead && <span className="text-pass text-sm">✓</span>}
-          <span className="text-cream font-medium">{topic.topic}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {isRead && <span style={{ color: 'var(--success)', fontSize: 13 }}>✓</span>}
+          <span style={{ color: 'var(--text)', fontWeight: 500 }}>{topic.topic}</span>
         </div>
-        <span className="text-mist text-sm">{expanded ? '▲' : '▼'}</span>
+        <span style={{ color: 'var(--text-2)', fontSize: 13 }}>{expanded ? '▲' : '▼'}</span>
       </button>
 
       {expanded && (
-        <div className="px-4 pb-5 space-y-4">
+        <div style={{ padding: '0 1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!isRead && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1 bg-navy rounded-full">
-                <div className="h-1 bg-gold rounded-full transition-all" style={{ width: `${(readSeconds / 30) * 100}%` }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, height: 4, background: 'var(--bg-raised)', borderRadius: 'var(--r-full)' }}>
+                <div style={{ height: 4, background: 'var(--accent)', borderRadius: 'var(--r-full)', transition: 'width 0.3s', width: `${(readSeconds / 30) * 100}%` }} />
               </div>
-              <span className="text-mist text-xs">{30 - readSeconds}s</span>
+              <span style={{ color: 'var(--text-2)', fontSize: 12 }}>{30 - readSeconds}s</span>
             </div>
           )}
 
-          <p className="text-mist text-sm leading-relaxed">{topic.explanation}</p>
+          <p style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.7 }}>{topic.explanation}</p>
 
-          <div className="bg-navy/60 rounded-lg p-3">
-            <div className="text-gold text-xs font-bold mb-1">Real-world example</div>
-            <p className="text-mist text-sm">{topic.example}</p>
+          <div style={{ background: 'var(--bg-sunken)', borderRadius: 'var(--r-sm)', padding: '0.75rem' }}>
+            <div style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Real-world example</div>
+            <p style={{ color: 'var(--text-2)', fontSize: 13 }}>{topic.example}</p>
           </div>
 
-          <div className="bg-warn/10 border border-warn/30 rounded-lg p-3">
-            <div className="text-warn text-xs font-bold mb-1">⚠ Exam trap</div>
-            <p className="text-cream text-sm">{topic.examTrap}</p>
+          <div style={{ background: 'var(--error-dim)', border: '1px solid var(--error)', borderRadius: 'var(--r-sm)', padding: '0.75rem' }}>
+            <div style={{ color: 'var(--error)', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>⚠ Exam trap</div>
+            <p style={{ color: 'var(--text)', fontSize: 13 }}>{topic.examTrap}</p>
           </div>
 
           {topic.keyTerms.length > 0 && (
             <div>
-              <div className="text-gold text-xs font-bold mb-2">Key Terms</div>
-              <div className="space-y-2">
+              <div style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Key Terms</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {topic.keyTerms.map(({ term, definition }) => (
-                  <div key={term} className="flex gap-2 text-sm">
-                    <span className="text-cream font-medium min-w-0">{term}:</span>
-                    <span className="text-mist">{definition}</span>
+                  <div key={term} style={{ display: 'flex', gap: 8, fontSize: 13 }}>
+                    <span style={{ color: 'var(--text)', fontWeight: 500, minWidth: 0 }}>{term}:</span>
+                    <span style={{ color: 'var(--text-2)' }}>{definition}</span>
                   </div>
                 ))}
               </div>

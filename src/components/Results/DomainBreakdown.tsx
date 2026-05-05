@@ -22,18 +22,17 @@ export default function DomainBreakdown({ questions, answers }: Props) {
 
   return (
     <div>
-      <h3 className="text-cream font-semibold mb-4">Domain Breakdown</h3>
-      <div className="space-y-3">
+      <h3 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 16 }}>Domain Breakdown</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {stats.map(({ domain, correct, total, pct }) => (
           <div key={domain}>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-mist">{domain}</span>
-              <span className="text-cream font-medium">{correct}/{total} ({pct}%)</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+              <span style={{ color: 'var(--text-2)' }}>{domain}</span>
+              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{correct}/{total} ({pct}%)</span>
             </div>
-            <div className="h-2 bg-ink rounded-full overflow-hidden">
+            <div style={{ height: 8, background: 'var(--bg-card)', borderRadius: 'var(--r-full)', overflow: 'hidden', border: '1px solid var(--border)' }}>
               <div
-                className="h-2 rounded-full transition-all duration-700"
-                style={{ width: `${pct}%`, backgroundColor: color }}
+                style={{ height: '100%', borderRadius: 'var(--r-full)', transition: 'width 0.7s', width: `${pct}%`, backgroundColor: color }}
               />
             </div>
           </div>

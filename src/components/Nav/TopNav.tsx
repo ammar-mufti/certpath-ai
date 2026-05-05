@@ -98,27 +98,28 @@ export default function TopNav() {
       {certId && cert && (
         <nav style={{ display: 'flex', gap: 2, marginLeft: 4 }}>
           {[
-            { label: 'Study', icon: 'menu_book',  path: `/${certId}/learn`,   active: isLearn },
-            { label: 'Exam',  icon: 'edit_note',  path: `/${certId}/exam`,    active: isExam },
-            { label: 'History', icon: 'history',  path: `/${certId}/history`, active: isHistory },
-          ].map(t => (
-            <button key={t.label}
-              onClick={() => navigate(t.path)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '4px 10px',
-                borderRadius: 'var(--r-sm)',
-                border: 'none',
-                background: t.active ? 'var(--accent-dim)' : 'transparent',
-                color: t.active ? 'var(--accent)' : 'var(--text-2)',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                transition: 'all 0.15s', whiteSpace: 'nowrap',
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>{t.icon}</span>
-              <span className="hidden-mobile">{t.label}</span>
-            </button>
-          ))}
+             { label: 'Study', icon: 'menu_book',  path: `/${certId}/learn`,   active: isLearn },
+             { label: 'Exam',  icon: 'edit_note',  path: `/${certId}/exam`,    active: isExam },
+             { label: 'Tutor', icon: 'smart_toy',  action: () => window.dispatchEvent(new CustomEvent('certpath-open-tutor')), active: false },
+             { label: 'History', icon: 'history',  path: `/${certId}/history`, active: isHistory },
+           ].map(t => (
+             <button key={t.label}
+               onClick={() => t.action ? t.action() : navigate(t.path)}
+               style={{
+                 display: 'flex', alignItems: 'center', gap: 5,
+                 padding: '4px 10px',
+                 borderRadius: 'var(--r-sm)',
+                 border: 'none',
+                 background: t.active ? 'var(--accent-dim)' : 'transparent',
+                 color: t.active ? 'var(--accent)' : 'var(--text-2)',
+                 fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                 transition: 'all 0.15s', whiteSpace: 'nowrap',
+               }}
+             >
+               <span className="material-symbols-outlined" style={{ fontSize: 15 }}>{t.icon}</span>
+               <span className="hidden-mobile">{t.label}</span>
+             </button>
+           ))}
         </nav>
       )}
 

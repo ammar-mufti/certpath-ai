@@ -19,13 +19,14 @@ export default function Stage4Quiz({ questions, domain }: Props) {
 
   if (!started) {
     return (
-      <div className="bg-ink rounded-2xl border border-white/10 p-6 text-center">
-        <div className="text-3xl mb-2">🧩</div>
-        <h3 className="text-cream font-semibold mb-1">Quick Quiz</h3>
-        <p className="text-mist text-sm mb-4">{questions.length} questions · Immediate feedback</p>
+      <div className="card" style={{ borderRadius: 16, padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: '1.875rem', marginBottom: 8 }}>🧩</div>
+        <h3 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 4 }}>Quick Quiz</h3>
+        <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 16 }}>{questions.length} questions · Immediate feedback</p>
         <button
           onClick={() => setStarted(true)}
-          className="bg-gold text-navy font-bold px-6 py-2 rounded-xl hover:bg-amber-400 transition-colors"
+          className="btn btn-primary"
+          style={{ fontWeight: 700, padding: '8px 24px' }}
         >
           Start Quiz
         </button>
@@ -36,13 +37,14 @@ export default function Stage4Quiz({ questions, domain }: Props) {
   if (finished) {
     const score = questions.filter((q, i) => selected[i] === q.correct).length
     return (
-      <div className="bg-ink rounded-2xl border border-white/10 p-6 text-center">
-        <div className="text-4xl mb-3">{score >= 4 ? '🏆' : score >= 3 ? '👍' : '📚'}</div>
-        <div className="text-cream text-2xl font-bold mb-1">{score} / {questions.length}</div>
-        <div className="text-mist text-sm mb-5">{score >= 4 ? 'Excellent mastery!' : score >= 3 ? 'Good work — review weak spots' : 'Review the concepts above and retry'}</div>
+      <div className="card" style={{ borderRadius: 16, padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: '2.25rem', marginBottom: 12 }}>{score >= 4 ? '🏆' : score >= 3 ? '👍' : '📚'}</div>
+        <div style={{ color: 'var(--text)', fontSize: '1.5rem', fontWeight: 700, marginBottom: 4 }}>{score} / {questions.length}</div>
+        <div style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 20 }}>{score >= 4 ? 'Excellent mastery!' : score >= 3 ? 'Good work — review weak spots' : 'Review the concepts above and retry'}</div>
         <button
           onClick={() => { setCurrent(0); setSelected({}); setShowResult(false); setFinished(false); setStarted(false) }}
-          className="bg-gold text-navy font-bold px-6 py-2 rounded-xl hover:bg-amber-400 transition-colors"
+          className="btn btn-primary"
+          style={{ fontWeight: 700, padding: '8px 24px' }}
         >
           Retake Quiz
         </button>
@@ -71,54 +73,58 @@ export default function Stage4Quiz({ questions, domain }: Props) {
   }
 
   return (
-    <div className="bg-ink rounded-2xl border border-white/10 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-mist text-sm">Question {current + 1} of {questions.length}</span>
-        <div className="flex gap-1">
+    <div className="card" style={{ borderRadius: 16, padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ color: 'var(--text-2)', fontSize: 13 }}>Question {current + 1} of {questions.length}</span>
+        <div style={{ display: 'flex', gap: 4 }}>
           {questions.map((_, i) => (
-            <div key={i} className={`w-2 h-2 rounded-full transition-colors ${
-              i < current ? 'bg-gold' : i === current ? 'bg-gold animate-pulse' : 'bg-white/20'
-            }`} />
+            <div key={i} style={{
+              width: 8, height: 8, borderRadius: '50%', transition: 'all 0.15s',
+              ...(i < current ? { background: 'var(--accent)' } : i === current ? { background: 'var(--accent)', animation: 'pulse 1.5s ease-in-out infinite' } : { background: 'var(--bg-raised)' }),
+            }} />
           ))}
         </div>
       </div>
 
-      <p className="text-cream leading-relaxed mb-4">{q.q}</p>
+      <p style={{ color: 'var(--text)', lineHeight: 1.7, marginBottom: 16 }}>{q.q}</p>
 
-      <div className="grid gap-2 mb-4">
+      <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
         {OPTS.map(opt => {
           const isSelected = answered === opt
           const isCorrect = opt === q.correct
-          let cls = 'border-white/10 text-mist hover:border-white/30 hover:text-cream'
-          if (showResult && isCorrect) cls = 'border-pass/60 bg-pass/10 text-cream'
-          else if (showResult && isSelected && !isCorrect) cls = 'border-fail/60 bg-fail/10 text-cream'
-          else if (isSelected) cls = 'border-gold bg-gold/10 text-cream'
+          let style: React.CSSProperties = { border: '1px solid var(--border)', color: 'var(--text-2)' }
+          if (showResult && isCorrect) style = { border: '1px solid var(--success)', background: 'rgba(var(--success),0.1)', color: 'var(--text)' }
+          else if (showResult && isSelected && !isCorrect) style = { border: '1px solid var(--error)', background: 'rgba(var(--error),0.1)', color: 'var(--text)' }
+          else if (isSelected) style = { border: '1px solid var(--accent)', background: 'rgba(201,168,76,0.1)', color: 'var(--text)' }
           return (
             <button
               key={opt}
               onClick={() => choose(opt)}
-              className={`w-full text-left rounded-xl p-3 border transition-all flex items-center gap-3 ${cls}`}
+              style={{
+                width: '100%', textAlign: 'left', borderRadius: 12, padding: 12, border: style.border, background: style.background || 'transparent', color: style.color, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 12, cursor: answered ? 'default' : 'pointer',
+              }}
             >
-              <span className="font-bold uppercase w-4 text-sm">{opt}</span>
-              <span className="text-sm">{q[opt]}</span>
+              <span style={{ fontWeight: 700, textTransform: 'uppercase', width: 16, fontSize: 13 }}>{opt}</span>
+              <span style={{ fontSize: 13 }}>{q[opt]}</span>
             </button>
           )
         })}
       </div>
 
       {showResult && (
-        <div className="bg-gold/10 border border-gold/30 rounded-xl p-4 mb-4">
-          <div className="text-gold text-xs font-bold mb-1">
+        <div className="card" style={{ border: '1px solid var(--accent)', background: 'rgba(201,168,76,0.1)', padding: 16, marginBottom: 16 }}>
+          <div style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
             {answered === q.correct ? '✓ Correct!' : `✗ Incorrect — Answer is (${q.correct.toUpperCase()})`}
           </div>
-          <p className="text-cream text-sm leading-relaxed">{q.explanation}</p>
+          <p style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.7 }}>{q.explanation}</p>
         </div>
       )}
 
       {showResult && (
         <button
           onClick={next}
-          className="w-full bg-gold text-navy font-bold py-3 rounded-xl hover:bg-amber-400 transition-colors"
+          className="btn btn-primary"
+          style={{ width: '100%', fontWeight: 700, padding: 12 }}
         >
           {current < questions.length - 1 ? 'Next Question →' : 'See Results'}
         </button>

@@ -12,20 +12,17 @@ export default function NavigationBar({ onSubmit }: Props) {
   const total = questions.length
   const unanswered = total - answered
 
-  // Auto-scroll current button into view
   useEffect(() => {
     const el = document.getElementById(`q-btn-${currentIndex}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
   }, [currentIndex])
 
   return (
-    <div className="bg-ink border-t border-white/10">
-      <div className="max-w-6xl mx-auto px-4 pt-3 pb-2">
-        {/* Scrollable question strip */}
+    <div style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
+      <div style={{ maxWidth: 1152, marginLeft: 'auto', marginRight: 'auto', paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 8 }}>
         <div
           ref={scrollRef}
-          className="flex gap-1 overflow-x-auto pb-2 mb-2"
-          style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(201,168,76,0.3) transparent' }}
+          style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 8, marginBottom: 8, scrollbarWidth: 'thin', scrollbarColor: 'rgba(201,168,76,0.3) transparent' }}
         >
           {questions.map((q, i) => {
             const isAnswered = !!answers[q.id]
@@ -35,13 +32,15 @@ export default function NavigationBar({ onSubmit }: Props) {
                 key={q.id}
                 id={`q-btn-${i}`}
                 onClick={() => navigateTo(i)}
-                className={`flex-shrink-0 w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                  isCurrent
-                    ? 'bg-gold text-navy ring-2 ring-gold/50'
+                style={{
+                  flexShrink: 0, width: 32, height: 32, borderRadius: 8, fontSize: 11, fontWeight: 700, transition: 'all 0.15s',
+                  ...(isCurrent
+                    ? { background: 'var(--accent)', color: 'var(--accent-fg)', boxShadow: '0 0 0 2px rgba(201,168,76,0.5)' }
                     : isAnswered
-                    ? 'bg-pass/40 text-pass border border-pass/30'
-                    : 'bg-white/8 text-mist hover:bg-white/15'
-                }`}
+                    ? { background: 'rgba(var(--success),0.4)', color: 'var(--success)', border: '1px solid var(--success)' }
+                    : { background: 'var(--bg-raised)', color: 'var(--text-2)' }
+                  ),
+                }}
               >
                 {i + 1}
               </button>
@@ -49,30 +48,32 @@ export default function NavigationBar({ onSubmit }: Props) {
           })}
         </div>
 
-        {/* Controls row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-3 text-xs text-mist">
-            <span className="text-pass font-medium">{answered} answered</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-2)' }}>
+            <span style={{ color: 'var(--success)', fontWeight: 500 }}>{answered} answered</span>
             {unanswered > 0 && <span>{unanswered} remaining</span>}
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button
               onClick={() => navigateTo(Math.max(0, currentIndex - 1))}
               disabled={currentIndex === 0}
-              className="px-3 py-1.5 rounded-lg bg-white/8 text-mist hover:bg-white/15 disabled:opacity-30 text-sm transition-colors"
+              className="btn btn-ghost"
+              style={{ fontSize: 13, padding: '4px 12px', opacity: currentIndex === 0 ? 0.3 : 1 }}
             >
               ← Prev
             </button>
             <button
               onClick={() => navigateTo(Math.min(total - 1, currentIndex + 1))}
               disabled={currentIndex === total - 1}
-              className="px-3 py-1.5 rounded-lg bg-white/8 text-mist hover:bg-white/15 disabled:opacity-30 text-sm transition-colors"
+              className="btn btn-ghost"
+              style={{ fontSize: 13, padding: '4px 12px', opacity: currentIndex === total - 1 ? 0.3 : 1 }}
             >
               Next →
             </button>
             <button
               onClick={onSubmit}
-              className="px-5 py-1.5 rounded-lg bg-gold text-navy font-bold hover:bg-amber-400 text-sm transition-colors"
+              className="btn btn-primary"
+              style={{ fontSize: 13, padding: '4px 20px', fontWeight: 700 }}
             >
               Submit
             </button>

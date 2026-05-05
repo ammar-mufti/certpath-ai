@@ -155,8 +155,8 @@ export default function Dashboard() {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                      <span className={`badge ${certAttempts.length > 0 ? 'badge-accent' : 'badge-gray'}`}>
-                        {certAttempts.length > 0 ? 'IN PROGRESS' : 'NOT STARTED'}
+                       <span className={`badge ${certAttempts.length > 0 || overallProgress > 0 ? 'badge-accent' : 'badge-gray'}`}>
+                         {certAttempts.length > 0 || overallProgress > 0 ? 'IN PROGRESS' : 'NOT STARTED'}
                       </span>
                       <span style={{ fontSize: 24 }}>{cert.icon}</span>
                     </div>

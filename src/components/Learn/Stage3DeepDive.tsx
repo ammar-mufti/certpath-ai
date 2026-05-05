@@ -7,69 +7,64 @@ interface Props {
 
 export default function Stage3DeepDive({ data, topic }: Props) {
   return (
-    <div className="mt-4 rounded-xl border border-gold/30 bg-gold/5 p-5 space-y-5">
-      <div className="text-xs font-bold uppercase tracking-widest text-gold mb-1">
+    <div className="card" style={{ marginTop: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 20, border: '1px solid var(--accent)', background: 'rgba(201,168,76,0.05)' }}>
+      <div className="label" style={{ color: 'var(--accent)', marginBottom: 4 }}>
         🔍 Deep Dive: {topic}
       </div>
 
-      {/* Overview */}
-      <p className="text-cream text-sm leading-relaxed">{data.overview}</p>
+      <p style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.7 }}>{data.overview}</p>
 
-      {/* How it works */}
       <div>
-        <div className="text-xs font-semibold text-mist uppercase tracking-wider mb-2">How It Works</div>
-        <ol className="space-y-1.5">
+        <div className="label" style={{ color: 'var(--text-2)', marginBottom: 8 }}>How It Works</div>
+        <ol style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 0, listStyle: 'none' }}>
           {data.howItWorks.map((step, i) => (
-            <li key={i} className="flex gap-3 text-sm text-mist leading-relaxed">
-              <span className="text-gold font-bold flex-shrink-0 w-5">{i + 1}.</span>
+            <li key={i} style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.7 }}>
+              <span style={{ color: 'var(--accent)', fontWeight: 700, flexShrink: 0, width: 20 }}>{i + 1}.</span>
               <span>{step}</span>
             </li>
           ))}
         </ol>
       </div>
 
-      {/* Real world example */}
-      <div className="bg-navy/60 rounded-xl p-4 space-y-2">
-        <div className="text-xs font-bold uppercase tracking-wider text-mist mb-1">🏢 Real World Example</div>
+      <div style={{ background: 'var(--bg-sunken)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="label" style={{ color: 'var(--text-2)', marginBottom: 4 }}>🏢 Real World Example</div>
         <div>
-          <span className="text-xs text-gold font-semibold">Scenario: </span>
-          <span className="text-sm text-mist">{data.realWorldExample.scenario}</span>
+          <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Scenario: </span>
+          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{data.realWorldExample.scenario}</span>
         </div>
         <div>
-          <span className="text-xs text-gold font-semibold">Application: </span>
-          <span className="text-sm text-mist">{data.realWorldExample.application}</span>
+          <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Application: </span>
+          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{data.realWorldExample.application}</span>
         </div>
         <div>
-          <span className="text-xs text-gold font-semibold">Outcome: </span>
-          <span className="text-sm text-mist">{data.realWorldExample.outcome}</span>
+          <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Outcome: </span>
+          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{data.realWorldExample.outcome}</span>
         </div>
       </div>
 
-      {/* Exam scenario */}
-      <div className="bg-navy/60 rounded-xl p-4 space-y-2">
-        <div className="text-xs font-bold uppercase tracking-wider text-mist mb-1">📝 Exam Scenario</div>
-        <p className="text-sm text-cream font-medium">{data.examScenario.question}</p>
-        <div className="flex gap-2 text-sm">
-          <span className="text-fail flex-shrink-0">❌</span>
-          <div><span className="text-fail font-semibold">Wrong: </span><span className="text-mist">{data.examScenario.wrongAnswer}</span></div>
+      <div style={{ background: 'var(--bg-sunken)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="label" style={{ color: 'var(--text-2)', marginBottom: 4 }}>📝 Exam Scenario</div>
+        <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{data.examScenario.question}</p>
+        <div style={{ display: 'flex', gap: 8, fontSize: 13 }}>
+          <span style={{ color: 'var(--error)', flexShrink: 0 }}>❌</span>
+          <div><span style={{ color: 'var(--error)', fontWeight: 600 }}>Wrong: </span><span style={{ color: 'var(--text-2)' }}>{data.examScenario.wrongAnswer}</span></div>
         </div>
-        <div className="flex gap-2 text-sm">
-          <span className="text-pass flex-shrink-0">✅</span>
-          <div><span className="text-pass font-semibold">Correct: </span><span className="text-mist">{data.examScenario.correctAnswer}</span></div>
+        <div style={{ display: 'flex', gap: 8, fontSize: 13 }}>
+          <span style={{ color: 'var(--success)', flexShrink: 0 }}>✅</span>
+          <div><span style={{ color: 'var(--success)', fontWeight: 600 }}>Correct: </span><span style={{ color: 'var(--text-2)' }}>{data.examScenario.correctAnswer}</span></div>
         </div>
       </div>
 
-      {/* Frameworks */}
       {data.frameworks && data.frameworks.length > 0 && (
         <div>
-          <div className="text-xs font-semibold text-mist uppercase tracking-wider mb-2">🔧 Frameworks</div>
-          <div className="flex flex-wrap gap-2">
+          <div className="label" style={{ color: 'var(--text-2)', marginBottom: 8 }}>🔧 Frameworks</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {data.frameworks.map((fw, i) => (
-              <div key={i} className="bg-navy border border-white/10 rounded-lg px-3 py-2 text-xs">
-                <div className="text-gold font-semibold mb-0.5">{fw.name}</div>
-                <div className="text-mist">{fw.description}</div>
+              <div key={i} className="card" style={{ padding: '8px 12px', fontSize: 11, flex: '1 1 auto', minWidth: 120 }}>
+                <div style={{ color: 'var(--accent)', fontWeight: 600, marginBottom: 2 }}>{fw.name}</div>
+                <div style={{ color: 'var(--text-2)' }}>{fw.description}</div>
                 {fw.stages.length > 0 && (
-                  <div className="text-mist/60 mt-1">{fw.stages.join(' → ')}</div>
+                  <div style={{ color: 'var(--text-3)', marginTop: 4, fontSize: 10 }}>{fw.stages.join(' → ')}</div>
                 )}
               </div>
             ))}
@@ -77,11 +72,10 @@ export default function Stage3DeepDive({ data, topic }: Props) {
         </div>
       )}
 
-      {/* Memory aid */}
       {data.memoryAid && (
-        <div className="bg-gold/10 border border-gold/30 rounded-xl px-4 py-3">
-          <span className="text-gold text-xs font-bold">💡 Memory Aid: </span>
-          <span className="text-cream text-sm">{data.memoryAid}</span>
+        <div className="card" style={{ border: '1px solid var(--accent)', background: 'rgba(201,168,76,0.1)', padding: '12px 16px' }}>
+          <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 700 }}>💡 Memory Aid: </span>
+          <span style={{ color: 'var(--text)', fontSize: 13 }}>{data.memoryAid}</span>
         </div>
       )}
     </div>

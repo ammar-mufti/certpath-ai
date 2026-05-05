@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import { useHistoryStore } from './store/historyStore'
 import { useLearnStore } from './store/learnStore'
@@ -16,7 +16,7 @@ import HistoryPage from './pages/HistoryPage'
 import ComingSoonPage from './pages/ComingSoonPage'
 import AdminPage from './pages/AdminPage'
 import MaintenancePage from './pages/MaintenancePage'
-import { getCert, AVAILABLE_CERTS } from './data/certifications'
+import { getCert } from './data/certifications'
 
 function OfflineBanner() {
   const [offline, setOffline] = useState(!navigator.onLine)
@@ -106,63 +106,6 @@ function MaintenanceGate({ children, maintenance }: { children: React.ReactNode;
   return <>{children}</>
 }
 
-function MobileBottomNav() {
-  const location = useLocation()
-  const navigate  = useNavigate()
-
-  const segs   = location.pathname.split('/').filter(Boolean)
-  const certId = AVAILABLE_CERTS.find(c => segs.includes(c.id))?.id
-  if (!certId) return null
-
-  const tabs = [
-    { label: 'Study',   icon: 'menu_book', path: `/${certId}/learn` },
-    { label: 'Exam',    icon: 'edit_note', path: `/${certId}/exam` },
-    { label: 'Tutor',   icon: 'smart_toy', action: 'tutor' },
-    { label: 'History', icon: 'history',   path: `/${certId}/history` },
-    { label: 'Certs',   icon: 'grid_view', path: '/dashboard' },
-  ]
-
-  return (
-    <nav style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      background: 'var(--bg-card)', borderTop: '1px solid var(--border)',
-      zIndex: 40, display: 'flex',
-    }}
-    className="md-hidden-mobile-nav"
-    >
-      {tabs.map(tab => {
-        const isActive = tab.path ? location.pathname.startsWith(tab.path) : false
-        return (
-          <button
-            key={tab.label}
-            onClick={() => tab.action === 'tutor' ? window.dispatchEvent(new CustomEvent('certpath-open-tutor')) : navigate(tab.path!)}
-            style={{
-              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-              gap: 2, padding: '10px 4px',
-              border: 'none', background: 'transparent', cursor: 'pointer',
-              color: isActive ? 'var(--accent)' : 'var(--text-3)',
-              transition: 'color 0.15s',
-            }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: 20,
-                fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
-              }}
-            >
-              {tab.icon}
-            </span>
-            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              {tab.label}
-            </span>
-          </button>
-        )
-      })}
-    </nav>
-  )
-}
-
 export default function App() {
   const init = useAuthStore(s => s.init)
   const user = useAuthStore(s => s.user)
@@ -226,7 +169,6 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </MaintenanceGate>
-        <MobileBottomNav />
       </BrowserRouter>
     </ThemeProvider>
   )

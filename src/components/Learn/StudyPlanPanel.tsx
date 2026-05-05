@@ -71,34 +71,37 @@ export default function StudyPlanPanel() {
   if (!cert) return null
 
   const plan = buildPlan(cert.domains, cert.examQuestions)
-  const total = plan.reduce((s, d) => s + d.tasks.length, 0)
+  const total = plan.reduce((s, d) => s + d.tasks.length,0)
   const done = Object.values(checks).filter(Boolean).length
 
   return (
-    <div className="bg-ink rounded-2xl border border-white/10 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-cream font-serif text-xl">{cert.name} 3-Day Study Plan</h2>
-        <span className="text-mist text-sm">{done}/{total} completed</span>
+    <div className="card" style={{ borderRadius: 16, padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <h2 style={{ color: 'var(--text)', fontFamily: 'Noto Serif, Georgia, serif', fontSize: '1.25rem' }}>{cert.name} 3-Day Study Plan</h2>
+        <span style={{ color: 'var(--text-2)', fontSize: 13 }}>{done}/{total} completed</span>
       </div>
 
-      <div className="h-1.5 bg-navy rounded-full mb-6">
-        <div className="h-1.5 bg-gold rounded-full transition-all" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%` }} />
+      <div className="progress-bar" style={{ height: 6, marginBottom: 24 }}>
+        <div className="progress-fill" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%` }} />
       </div>
 
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {plan.map(day => (
           <div key={day.label}>
-            <h3 className="text-gold text-sm font-semibold uppercase tracking-wider mb-3">{day.label}</h3>
-            <div className="space-y-2">
+            <h3 style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>{day.label}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {day.tasks.map(task => (
-                <label key={task.id} className="flex items-center gap-3 cursor-pointer group">
+                <label key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={!!checks[task.id]}
                     onChange={e => setChecks(p => ({ ...p, [task.id]: e.target.checked }))}
-                    className="w-4 h-4 rounded border-white/30 bg-navy text-gold accent-gold"
+                    style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--accent)', accentColor: 'var(--accent)' }}
                   />
-                  <span className={`text-sm transition-colors ${checks[task.id] ? 'line-through text-mist/50' : 'text-mist group-hover:text-cream'}`}>
+                  <span style={{
+                    fontSize: 13, transition: 'all 0.15s',
+                    ...(checks[task.id] ? { textDecoration: 'line-through', color: 'var(--text-3)' } : { color: 'var(--text-2)' }),
+                  }}>
                     {task.label}
                   </span>
                 </label>

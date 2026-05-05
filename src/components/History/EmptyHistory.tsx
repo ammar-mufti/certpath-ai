@@ -1,9 +1,9 @@
 export default function EmptyHistory() {
   return (
-    <div className="bg-ink rounded-2xl p-12 border border-white/10 text-center">
-      <div className="text-5xl mb-4">📊</div>
-      <h2 className="text-cream font-serif text-xl mb-2">No exam history yet</h2>
-      <p className="text-mist text-sm">Complete a practice exam to start tracking your progress</p>
+    <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+      <div style={{ fontSize: '3rem', marginBottom: 16 }}>📊</div>
+      <h2 style={{ color: 'var(--text)', fontFamily: 'Noto Serif, Georgia, serif', fontSize: '1.25rem', marginBottom: 8 }}>No exam history yet</h2>
+      <p style={{ color: 'var(--text-2)', fontSize: 13 }}>Complete a practice exam to start tracking your progress</p>
     </div>
   )
 }

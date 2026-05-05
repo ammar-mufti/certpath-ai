@@ -16,7 +16,7 @@ export default function ProgressTracker({ domain }: Props) {
   const quizScore = p?.quizScore
 
   return (
-    <div className="flex gap-4 text-xs text-mist">
+    <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-2)' }}>
       <span style={{ color: topicsRead > 0 ? color : undefined }}>
         {topicsRead} topics read
       </span>

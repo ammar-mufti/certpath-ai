@@ -5,21 +5,21 @@ function MaturityModel() {
   const colors = ['#8DA4B8', '#4A9EDB', '#E8C94A', '#E8904A', '#7BC67A']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">CX Maturity Model</h4>
-      <div className="flex gap-1">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>CX Maturity Model</h4>
+      <div style={{ display: 'flex', gap: 4 }}>
         {stages.map((s, i) => (
-          <div key={s} className="flex-1 text-center">
-            <div className="h-8 rounded flex items-center justify-center text-xs font-bold text-navy" style={{ backgroundColor: colors[i] }}>
+          <div key={s} style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--accent-fg)', backgroundColor: colors[i] }}>
               {i + 1}
             </div>
-            <div className="text-mist text-xs mt-1 leading-tight">{s}</div>
+            <div style={{ color: 'var(--text-2)', fontSize: 11, marginTop: 4, lineHeight: 1.3 }}>{s}</div>
           </div>
         ))}
       </div>
-      <div className="flex mt-1 gap-1">
-        <div className="flex-1" />
+      <div style={{ display: 'flex', marginTop: 4, gap: 4 }}>
+        <div style={{ flex: 1 }} />
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="text-mist text-center" style={{ flex: 1 }}>→</div>
+          <div key={i} style={{ color: 'var(--text-2)', textAlign: 'center', flex: 1 }}>→</div>
         ))}
       </div>
     </div>
@@ -29,9 +29,9 @@ function MaturityModel() {
 function GovernanceModel() {
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">CX Governance Model</h4>
-      <div className="relative flex items-center justify-center h-40">
-        <svg viewBox="0 0 200 160" className="w-full max-w-xs">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>CX Governance Model</h4>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160 }}>
+        <svg viewBox="0 0 200 160" style={{ width: '100%', maxWidth: 320 }}>
           <circle cx="100" cy="80" r="70" fill="none" stroke="#4A9EDB" strokeWidth="2" opacity="0.3" />
           <circle cx="100" cy="80" r="48" fill="none" stroke="#E8C94A" strokeWidth="2" opacity="0.4" />
           <circle cx="100" cy="80" r="26" fill="#C9A84C" opacity="0.2" />
@@ -49,17 +49,17 @@ function VoCClosedLoop() {
   const colors = ['#7BC67A', '#E8C94A', '#E8904A', '#4A9EDB']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">VoC Closed Loop</h4>
-      <div className="flex items-center justify-center gap-2 flex-wrap">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>VoC Closed Loop</h4>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
         {steps.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className="w-20 h-12 rounded-lg flex items-center justify-center text-xs font-bold text-navy" style={{ backgroundColor: colors[i] }}>
+          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 80, height: 48, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--accent-fg)', backgroundColor: colors[i] }}>
               {s}
             </div>
-            {i < steps.length - 1 && <span className="text-mist">→</span>}
+            {i < steps.length - 1 && <span style={{ color: 'var(--text-2)' }}>→</span>}
           </div>
         ))}
-        <div className="text-mist text-xs w-full text-center mt-1">↩ loop back to Collect</div>
+        <div style={{ color: 'var(--text-2)', fontSize: 11, width: '100%', textAlign: 'center', marginTop: 4 }}>↩ loop back to Collect</div>
       </div>
     </div>
   )
@@ -68,15 +68,15 @@ function VoCClosedLoop() {
 function ListeningPostTable() {
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">Listening Post Types</h4>
-      <div className="grid grid-cols-2 gap-3">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Listening Post Types</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {[
           { type: 'Solicited', color: '#7BC67A', examples: 'Surveys, NPS, interviews, focus groups' },
           { type: 'Unsolicited', color: '#E8904A', examples: 'Social media, reviews, complaints, call logs' },
         ].map(({ type, color, examples }) => (
-          <div key={type} className="bg-navy rounded-lg p-3 border-l-4" style={{ borderColor: color }}>
-            <div className="font-bold text-sm mb-1" style={{ color }}>{type}</div>
-            <div className="text-mist text-xs">{examples}</div>
+          <div key={type} className="card" style={{ borderLeft: `4px solid ${color}`, padding: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color }}>{type}</div>
+            <div style={{ color: 'var(--text-2)', fontSize: 11 }}>{examples}</div>
           </div>
         ))}
       </div>
@@ -89,13 +89,13 @@ function JourneyMapAnatomy() {
   const colors = ['#4A9EDB', '#7BC67A', '#E8C94A', '#C97AC9', '#E8904A', '#7AC9C9']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">Journey Map Anatomy</h4>
-      <div className="space-y-1.5">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Journey Map Anatomy</h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {lanes.map((lane, i) => (
-          <div key={lane} className="flex items-center gap-3">
-            <div className="w-28 text-xs font-medium flex-shrink-0" style={{ color: colors[i] }}>{lane}</div>
-            <div className="flex-1 h-5 rounded" style={{ backgroundColor: colors[i] + '33' }}>
-              <div className="h-full rounded" style={{ width: '70%', backgroundColor: colors[i] + '55' }} />
+          <div key={lane} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 112, fontSize: 11, fontWeight: 500, flexShrink: 0, color: colors[i] }}>{lane}</div>
+            <div style={{ flex: 1, height: 20, borderRadius: 4, background: colors[i] + '33' }}>
+              <div style={{ height: '100%', borderRadius: 4, width: '70%', background: colors[i] + '55' }} />
             </div>
           </div>
         ))}
@@ -109,13 +109,13 @@ function DesignThinking() {
   const colors = ['#4A9EDB', '#7BC67A', '#E8C94A', '#E8904A', '#C97AC9']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">Design Thinking Process</h4>
-      <div className="flex">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Design Thinking Process</h4>
+      <div style={{ display: 'flex' }}>
         {stages.map((s, i) => (
-          <div key={s} className="flex-1 text-center relative">
+          <div key={s} style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
             <div
-              className="h-8 flex items-center justify-center text-xs font-bold text-navy relative z-10"
               style={{
+                height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--accent-fg)', position: 'relative', zIndex: 10,
                 backgroundColor: colors[i],
                 clipPath: i < stages.length - 1 ? 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)' : undefined,
                 marginRight: i < stages.length - 1 ? '-4px' : undefined,
@@ -123,7 +123,7 @@ function DesignThinking() {
             >
               {i + 1}
             </div>
-            <div className="text-mist text-xs mt-1 leading-tight px-1">{s}</div>
+            <div style={{ color: 'var(--text-2)', fontSize: 11, marginTop: 4, lineHeight: 1.3, padding: '0 4px' }}>{s}</div>
           </div>
         ))}
       </div>
@@ -139,24 +139,24 @@ function MetricsTable() {
   ]
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">NPS / CSAT / CES Comparison</h4>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>NPS / CSAT / CES Comparison</h4>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', fontSize: 11 }}>
           <thead>
-            <tr className="text-gold border-b border-white/10">
-              <th className="text-left py-2 pr-4">Metric</th>
-              <th className="text-left py-2 pr-4">Question</th>
-              <th className="text-left py-2 pr-4">Scale</th>
-              <th className="text-left py-2">Focus</th>
+            <tr style={{ color: 'var(--accent)', borderBottom: '1px solid var(--border)' }}>
+              <th style={{ textAlign: 'left', padding: '8px 16px 8px 0' }}>Metric</th>
+              <th style={{ textAlign: 'left', padding: '8px 16px 8px 0' }}>Question</th>
+              <th style={{ textAlign: 'left', padding: '8px 16px 8px 0' }}>Scale</th>
+              <th style={{ textAlign: 'left', padding: '8px 0' }}>Focus</th>
             </tr>
           </thead>
           <tbody>
             {metrics.map(m => (
-              <tr key={m.name} className="border-b border-white/5 text-mist">
-                <td className="py-2 pr-4 font-bold text-cream">{m.name}</td>
-                <td className="py-2 pr-4">{m.question}</td>
-                <td className="py-2 pr-4">{m.scale}</td>
-                <td className="py-2">{m.focus}</td>
+              <tr key={m.name} style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-2)' }}>
+                <td style={{ padding: '8px 16px 8px 0', fontWeight: 700, color: 'var(--text)' }}>{m.name}</td>
+                <td style={{ padding: '8px 16px 8px 0' }}>{m.question}</td>
+                <td style={{ padding: '8px 16px 8px 0' }}>{m.scale}</td>
+                <td style={{ padding: '8px 0' }}>{m.focus}</td>
               </tr>
             ))}
           </tbody>
@@ -171,14 +171,14 @@ function ROILinkage() {
   const colors = ['#4A9EDB', '#E8C94A', '#7BC67A']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">ROI Linkage Chain</h4>
-      <div className="flex items-center gap-2">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>ROI Linkage Chain</h4>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {steps.map((s, i) => (
-          <div key={s} className="flex items-center gap-2 flex-1">
-            <div className="flex-1 rounded-lg p-2 text-center text-xs font-medium text-navy" style={{ backgroundColor: colors[i] }}>
+          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            <div style={{ flex: 1, borderRadius: 8, padding: 8, textAlign: 'center', fontSize: 11, fontWeight: 500, color: 'var(--accent-fg)', backgroundColor: colors[i] }}>
               {s}
             </div>
-            {i < steps.length - 1 && <span className="text-mist text-lg">→</span>}
+            {i < steps.length - 1 && <span style={{ color: 'var(--text-2)', fontSize: '1.125rem' }}>→</span>}
           </div>
         ))}
       </div>
@@ -195,10 +195,10 @@ function CultureLevers() {
   ]
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">Culture Change Levers</h4>
-      <div className="grid grid-cols-2 gap-2">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Culture Change Levers</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {items.map(({ label, color }) => (
-          <div key={label} className="rounded-lg p-3 text-center text-sm font-medium text-navy" style={{ backgroundColor: color }}>
+          <div key={label} style={{ borderRadius: 8, padding: 12, textAlign: 'center', fontSize: 13, fontWeight: 500, color: 'var(--accent-fg)', backgroundColor: color }}>
             {label}
           </div>
         ))}
@@ -215,10 +215,10 @@ function EngagementPyramid() {
   ]
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">Employee Engagement Pyramid</h4>
-      <div className="flex flex-col items-center gap-1.5">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Employee Engagement Pyramid</h4>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         {levels.map(({ label, width, color }) => (
-          <div key={label} className="h-8 rounded flex items-center justify-center text-xs font-bold text-navy" style={{ width, backgroundColor: color }}>
+          <div key={label} style={{ height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--accent-fg)', width, backgroundColor: color }}>
             {label}
           </div>
         ))}
@@ -232,12 +232,12 @@ function RACITable() {
   const descriptions = ['Does the work', 'Owns the outcome', 'Provides input', 'Kept updated']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">RACI Template</h4>
-      <div className="grid grid-cols-2 gap-2">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>RACI Template</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {roles.map((r, i) => (
-          <div key={r} className="bg-navy rounded-lg p-3 border border-white/10">
-            <div className="text-gold font-bold text-sm">{r[0]} — {r}</div>
-            <div className="text-mist text-xs mt-1">{descriptions[i]}</div>
+          <div key={r} className="card" style={{ padding: 12 }}>
+            <div style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 13 }}>{r[0]} — {r}</div>
+            <div style={{ color: 'var(--text-2)', fontSize: 11, marginTop: 4 }}>{descriptions[i]}</div>
           </div>
         ))}
       </div>
@@ -250,17 +250,17 @@ function ChangeCurve() {
   const colors = ['#A63228', '#E8904A', '#E8C94A', '#7BC67A']
   return (
     <div>
-      <h4 className="text-cream font-semibold mb-3 text-sm">Change Curve</h4>
-      <div className="relative h-24 flex items-end gap-1 px-2">
+      <h4 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Change Curve</h4>
+      <div style={{ position: 'relative', height: 96, display: 'flex', alignItems: 'flex-end', gap: 4, padding: '0 8px' }}>
         {[20, 10, 40, 80].map((h, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full rounded-t" style={{ height: `${h}%`, backgroundColor: colors[i] }} />
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: '100%', borderRadius: '4px 4px 0 0', height: `${h}%`, backgroundColor: colors[i] }} />
           </div>
         ))}
       </div>
-      <div className="flex gap-1 mt-1">
+      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
         {points.map((p, i) => (
-          <div key={p} className="flex-1 text-center text-xs leading-tight" style={{ color: colors[i] }}>{p}</div>
+          <div key={p} style={{ flex: 1, textAlign: 'center', fontSize: 11, lineHeight: 1.3, color: colors[i] }}>{p}</div>
         ))}
       </div>
     </div>
@@ -278,11 +278,11 @@ const FRAMEWORKS: Record<string, React.FC[]> = {
 
 export default function KeyFrameworks({ domain }: Props) {
   const components = FRAMEWORKS[domain] ?? []
-  if (components.length === 0) return <p className="text-mist text-sm">No frameworks for this domain.</p>
+  if (components.length === 0) return <p style={{ color: 'var(--text-2)', fontSize: 13 }}>No frameworks for this domain.</p>
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {components.map((Framework, i) => (
-        <div key={i} className="bg-ink rounded-xl border border-white/10 p-5">
+        <div key={i} className="card" style={{ borderRadius: 12, padding: 20 }}>
           <Framework />
         </div>
       ))}

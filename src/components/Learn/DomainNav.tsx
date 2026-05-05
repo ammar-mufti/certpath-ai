@@ -18,7 +18,6 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
   const cert = getCert(certId)
   const domains = cert?.domains ?? []
 
-  // Derive active domain from URL
   const activeDomainFromUrl = domains.find(d => toDomainSlug(d.name) === params.domainSlug)?.name ?? _activeDomain
   const activeDomain = activeDomainFromUrl
 
@@ -39,12 +38,18 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
   }
 
   return (
-    <div className="w-full flex flex-col py-4 px-3 gap-1">
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '16px 12px', gap: 4 }}>
       <button
         onClick={() => navigate(`/${certId}/learn`)}
-        className={`text-left px-3 py-2 rounded-lg text-sm font-semibold mb-2 transition-colors ${
-          !activeDomain ? 'bg-gold/20 text-gold' : 'text-mist hover:text-cream hover:bg-white/5'
-        }`}
+        style={{
+          textAlign: 'left', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+          marginBottom: 8, transition: 'all 0.15s',
+          color: !activeDomain ? 'var(--accent)' : 'var(--text-2)',
+          background: !activeDomain ? 'var(--accent-dim)' : 'transparent',
+          border: 'none', cursor: 'pointer',
+        }}
+        onMouseEnter={e => { if (activeDomain) { e.currentTarget.style.background = 'var(--bg-raised)'; e.currentTarget.style.color = 'var(--text)' } }}
+        onMouseLeave={e => { if (activeDomain) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)' } }}
       >
         ← {cert?.name ?? 'Study Guide'}
       </button>
@@ -65,50 +70,58 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
           <div key={domain.name}>
             <button
               onClick={() => navigate(`/${certId}/learn/${toDomainSlug(domain.name)}`)}
-              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all group ${
-                isActive
-                  ? 'bg-white/10 border border-white/20'
-                  : 'hover:bg-white/5 border border-transparent'
-              }`}
+              style={{
+                width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 8,
+                transition: 'all 0.15s',
+                background: isActive ? 'var(--bg-raised)' : 'transparent',
+                border: isActive ? '1px solid var(--border)' : '1px solid transparent',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bg-raised)'; e.currentTarget.style.borderColor = 'var(--border)' } }}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' } }}
             >
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
-                    className="text-xs font-semibold truncate leading-snug"
-                    style={{ color: isActive ? color : undefined }}
+                    style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4, color: isActive ? color : 'var(--text)' }}
                   >
-                    <span className={isActive ? '' : 'text-cream group-hover:text-gold transition-colors'}>
-                      {domain.name}
-                    </span>
+                    {domain.name}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-mist/60">{domain.percentage}%</span>
-                    <span className="text-[10px]">{statusDot}</span>
-                    <span className="text-[10px] text-mist/60">{prog}%</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{domain.percentage}%</span>
+                    <span style={{ fontSize: 10 }}>{statusDot}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{prog}%</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-1.5 h-0.5 bg-white/10 rounded-full">
-                <div className="h-0.5 rounded-full transition-all" style={{ width: `${prog}%`, backgroundColor: color }} />
+              <div style={{ marginTop: 6, height: 2, background: 'var(--border)', borderRadius: 'var(--r-full)' }}>
+                <div style={{ height: 2, borderRadius: 'var(--r-full)', transition: 'all 0.15s', width: `${prog}%`, backgroundColor: color }} />
               </div>
             </button>
 
             {isActive && topics.length > 0 && (
-              <div className="ml-4 mt-1 mb-2 space-y-0.5 border-l border-white/10 pl-3">
+              <div style={{ marginLeft: 16, marginTop: 4, marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2, borderLeft: '1px solid var(--border)', paddingLeft: 12 }}>
                 {topics.map(topic => {
                   const isRead = topicsRead.includes(topic)
                   return (
                     <button
                       key={topic}
                       onClick={() => handleTopicClick(domain.name, topic)}
-                      className="w-full text-left text-xs py-1 text-mist hover:text-cream transition-colors flex items-center gap-1.5 group"
+                      style={{
+                        width: '100%', textAlign: 'left', fontSize: 12, padding: '4px 0',
+                        color: isRead ? 'var(--text-3)' : 'var(--text-2)',
+                        transition: 'color 0.15s', border: 'none', background: 'transparent', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 6,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = isRead ? 'var(--text-3)' : 'var(--text-2)' }}
                     >
                       {isRead
-                        ? <span className="text-pass text-[10px] flex-shrink-0">✓</span>
-                        : <span className="w-1.5 h-1.5 rounded-full bg-white/20 flex-shrink-0 group-hover:bg-gold/60 transition-colors" />
+                        ? <span style={{ color: 'var(--success)', fontSize: 10, flexShrink: 0 }}>✓</span>
+                        : <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border)', flexShrink: 0 }} />
                       }
-                      <span className={`truncate ${isRead ? 'text-mist/60 line-through decoration-mist/40' : ''}`}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isRead ? 'line-through' : 'none' }}>
                         {topic}
                       </span>
                     </button>
@@ -120,17 +133,18 @@ export default function DomainNav({ activeDomain: _activeDomain, certId }: Props
         )
       })}
 
-      <div className="mt-auto pt-4 px-3 border-t border-white/10">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-mist">Overall Readiness</span>
-          <span className="text-xs font-bold text-gold">{overallProgress}%</span>
+      <div style={{ marginTop: 'auto', paddingTop: 16, paddingLeft: 12, paddingRight: 12, borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Overall Readiness</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{overallProgress}%</span>
         </div>
-        <div className="h-1.5 bg-white/10 rounded-full">
-          <div className="h-1.5 rounded-full bg-gold transition-all" style={{ width: `${overallProgress}%` }} />
+        <div style={{ height: 6, background: 'var(--border)', borderRadius: 'var(--r-full)' }}>
+          <div style={{ height: 6, borderRadius: 'var(--r-full)', background: 'var(--accent)', transition: 'all 0.15s', width: `${overallProgress}%` }} />
         </div>
         <button
           onClick={() => navigate(`/${certId}/exam`)}
-          className="mt-3 w-full py-2 rounded-lg bg-gold text-navy text-xs font-bold hover:bg-amber-400 transition-colors"
+          className="btn btn-primary"
+          style={{ marginTop: 12, width: '100%', padding: '8px 16px', fontSize: 12 }}
         >
           Take Practice Exam →
         </button>
