@@ -177,7 +177,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
 
   getCompletedSteps(certId, domain, topic) {
     const key = progressKey(certId, domain)
-    return get().progress[key]?.completedSteps[topic] ?? []
+    return get().progress[key]?.completedSteps?.[topic] ?? []
   },
 
   resetSteps(certId, domain, topic) {
