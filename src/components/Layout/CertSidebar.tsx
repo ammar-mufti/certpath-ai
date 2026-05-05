@@ -70,17 +70,12 @@ export function CertSidebar({ onOpenTutor, activeTopic }: CertSidebarProps) {
   const isActive = (path: string) => location.pathname.startsWith(path)
   const domainSlug = location.pathname.split('/learn/')[1]?.split('/')[0] ?? ''
 
-  const [collapsedDomains, setCollapsedDomains] = useState<Set<string>>(() => new Set())
+  const [userToggledDomain, setUserToggledDomain] = useState<string | null>(null)
 
-  const expandedDomain = collapsedDomains.has(domainSlug) ? null : domainSlug
+  const expandedDomain = userToggledDomain ?? domainSlug ?? null
 
   function toggleDomain(slug: string) {
-    setCollapsedDomains(prev => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
+    setUserToggledDomain(prev => prev === slug ? null : slug)
   }
 
   return (
