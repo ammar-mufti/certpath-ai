@@ -26,6 +26,7 @@ interface TopicCardProps {
 function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCardProps) {
   const { getReadTopics, markTopicRead } = useLearnStore()
   const [userToggled, setUserToggled] = useState<boolean | null>(null)
+  const [highlighted, setHighlighted] = useState(autoExpand)
   const [showDeepDive, setShowDeepDive] = useState(false)
   const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const topicsRead = getReadTopics(certId, domain)
@@ -36,6 +37,13 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
     useStageContent<Stage3DeepDive>(certId, domain, 'stage3-deepdive', {
       topic: topic.topic,
     })
+
+  useEffect(() => {
+    if (autoExpand && highlighted) {
+      const timer = setTimeout(() => setHighlighted(false), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [autoExpand, highlighted])
 
   useEffect(() => {
     if (expanded && !isRead) {
@@ -72,13 +80,13 @@ function TopicCard({ certId, domain, topic, autoExpand, onRef, index }: TopicCar
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '1rem 1.25rem',
-          background: expanded ? 'var(--bg-raised)' : 'var(--bg-card)',
-          border: `1px solid ${expanded ? 'var(--accent)' : 'var(--border)'}`,
+          background: highlighted ? 'var(--accent-dim)' : expanded ? 'var(--bg-raised)' : 'var(--bg-card)',
+          border: `1px solid ${highlighted ? 'var(--accent)' : expanded ? 'var(--accent)' : 'var(--border)'}`,
           borderRadius: expanded ? '12px 12px 0 0' : 12,
           cursor: 'pointer',
           textAlign: 'left',
-          transition: 'all 0.2s',
-          boxShadow: expanded ? '0 0 20px rgba(242,202,80,0.08)' : 'var(--shadow)',
+          transition: 'all 0.5s',
+          boxShadow: highlighted ? '0 0 24px rgba(242,202,80,0.25)' : expanded ? '0 0 20px rgba(242,202,80,0.08)' : 'var(--shadow)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
