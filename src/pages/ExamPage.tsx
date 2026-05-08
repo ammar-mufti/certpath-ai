@@ -10,6 +10,8 @@ import QuestionCard from '../components/Exam/QuestionCard'
 import NavigationBar from '../components/Exam/NavigationBar'
 import TimerDisplay from '../components/Exam/TimerDisplay'
 import SubmitModal from '../components/Exam/SubmitModal'
+import { AppShell } from '../components/Layout/AppShell'
+import { CertSidebar } from '../components/Layout/CertSidebar'
 
 interface Props {
   certId: string
@@ -102,10 +104,12 @@ export default function ExamPage({ certId }: Props) {
   return (
     <Routes>
       <Route index element={
-        <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
+        <>
           <TopNav />
-          <ConfigScreen certId={certId} />
-        </div>
+          <AppShell sidebar={<CertSidebar />}>
+            <ConfigScreen certId={certId} />
+          </AppShell>
+        </>
       } />
       <Route path="loading" element={<LoadingScreen certId={certId} />} />
       <Route path="question" element={<ActiveExam certId={certId} />} />

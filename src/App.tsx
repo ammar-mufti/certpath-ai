@@ -31,7 +31,7 @@ function OfflineBanner() {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-      background: '#c07a20', color: '#fff',
+      background: 'var(--accent)', color: 'var(--accent-fg)',
       textAlign: 'center', fontSize: 13, padding: '8px 16px', fontWeight: 500,
     }}>
       You're offline — showing cached content
